@@ -1,0 +1,158 @@
+@import "tailwindcss";
+
+@theme {
+  /* Semantic palette — Noir Red (default). Graphite Ash overrides below. */
+  --color-canvas: #0b0b0d;
+  --color-surface: #141416;
+  --color-ink: #eceae6;
+  --color-accent: #c02a33;
+  --color-accent-strong: #99202a;
+  --color-paper: #e8e7e3;
+  --color-paper-ink: #141414;
+  --color-doodle: #d68f8f;
+  --color-doodle-2: #b7b7b9;
+  --color-glass: rgba(255, 255, 255, 0.06);
+  --color-glass-border: rgba(255, 255, 255, 0.14);
+}
+
+@theme inline {
+  --font-sans: var(--font-work-sans);
+  --font-serif: var(--font-playfair);
+  --font-script: var(--font-caveat);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+/* Scroll-reveal — only active once JS marks the page ready, so content is
+   never hidden without JS or when the user prefers reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-ready [data-reveal] {
+    opacity: 0;
+    transform: translateY(44px);
+    filter: blur(12px);
+    transition:
+      opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+      filter 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform, filter;
+  }
+  .reveal-ready [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* Filmic frame fade — each snap frame fades in as it scrolls into view, so the
+   sections read as one connected series. Scroll-driven (tracks scroll position,
+   not a one-shot). Progressive enhancement: browsers without scroll-driven
+   animations just show every frame at full opacity. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .frame-fade {
+      animation: frame-fade-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+    @keyframes frame-fade-in {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+  }
+}
+
+/* Continuous cinematic motion — always alive, even without scrolling. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Slow Ken Burns drift on full-bleed photos. Uses the `scale`/`translate`
+     properties (not `transform`) so it composes with any Tailwind transform. */
+  .ken-burns {
+    animation: ken-burns 26s ease-in-out infinite alternate;
+  }
+  @keyframes ken-burns {
+    from {
+      scale: 1;
+      translate: 0 0;
+    }
+    to {
+      scale: 1.12;
+      translate: 0 -2%;
+    }
+  }
+
+  /* Gentle float for handwritten doodles. Animates `translate` only, so a
+     doodle's Tailwind rotate (transform) is preserved. */
+  .float-slow {
+    animation: float-slow 6.5s ease-in-out infinite;
+  }
+  @keyframes float-slow {
+    0%,
+    100% {
+      translate: 0 0;
+    }
+    50% {
+      translate: 0 -7px;
+    }
+  }
+}
+
+/* Someday App prototype (/app) — keyframes referenced by the ported design. */
+@keyframes sdGrain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-4%, -4%); }
+  30% { transform: translate(3%, -2%); }
+  50% { transform: translate(-2%, 3%); }
+  70% { transform: translate(2%, 2%); }
+  90% { transform: translate(-3%, 1%); }
+}
+@keyframes sdZoom { from { transform: scale(1.04); } to { transform: scale(1.16); } }
+@keyframes sdRise { from { opacity: 0; transform: translateY(26px); filter: blur(8px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+@keyframes sdFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sdPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+@keyframes sdWave { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
+@keyframes sdSpin { to { transform: rotate(360deg); } }
+
+/* ---- Someday App (/app) prototype themes ---------------------------------
+   Utilities like bg-app-panel / text-app-dim reference these vars, and the
+   [data-app-theme="…"] blocks below override them per subtree — so switching
+   the theme in the sidebar re-skins the whole app. Default (below) = Noir. */
+@theme {
+  --color-app-bg: #141110;
+  --color-app-bg2: #1c1714;
+  --color-app-panel: rgba(26, 22, 20, 0.66);
+  --color-app-surface: rgba(236, 228, 214, 0.05);
+  --color-app-text: #ece4d6;
+  --color-app-dim: #9c9086;
+  --color-app-faint: #6e655d;
+  --color-app-border: rgba(236, 228, 214, 0.12);
+  --color-app-accent: #c23b3b;
+  --color-app-accent-dim: rgba(194, 59, 59, 0.16);
+}
+[data-app-theme="slate"] {
+  --color-app-bg: #161a1e; --color-app-bg2: #1f262c; --color-app-panel: rgba(31, 38, 44, 0.66); --color-app-surface: rgba(232, 236, 239, 0.05); --color-app-text: #e8ecef; --color-app-dim: #93a0aa; --color-app-faint: #5f6b74; --color-app-border: rgba(232, 236, 239, 0.12); --color-app-accent: #cf4747; --color-app-accent-dim: rgba(207, 71, 71, 0.16);
+}
+[data-app-theme="black"] {
+  --color-app-bg: #000000; --color-app-bg2: #0a0a0a; --color-app-panel: rgba(10, 10, 10, 0.7); --color-app-surface: rgba(255, 255, 255, 0.045); --color-app-text: #efefef; --color-app-dim: #8a8a8a; --color-app-faint: #565656; --color-app-border: rgba(255, 255, 255, 0.12); --color-app-accent: #e0403f; --color-app-accent-dim: rgba(224, 64, 63, 0.16);
+}
+[data-app-theme="crimson"] {
+  --color-app-bg: #190c0d; --color-app-bg2: #2a1315; --color-app-panel: rgba(42, 19, 21, 0.6); --color-app-surface: rgba(243, 226, 223, 0.05); --color-app-text: #f3e4e1; --color-app-dim: #c39a98; --color-app-faint: #8a5f5d; --color-app-border: rgba(243, 226, 223, 0.14); --color-app-accent: #e64b4b; --color-app-accent-dim: rgba(230, 75, 75, 0.2);
+}
+[data-app-theme="glass"] {
+  --color-app-bg: #100e0d; --color-app-bg2: #241d1a; --color-app-panel: rgba(255, 255, 255, 0.07); --color-app-surface: rgba(255, 255, 255, 0.08); --color-app-text: #f2ece2; --color-app-dim: #b6ada2; --color-app-faint: #7a7168; --color-app-border: rgba(255, 255, 255, 0.2); --color-app-accent: #d94444; --color-app-accent-dim: rgba(217, 68, 68, 0.18);
+}
