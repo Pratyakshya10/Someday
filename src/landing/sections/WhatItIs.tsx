@@ -1,7 +1,6 @@
 // WhatItIs — "A letter you can't open yet." Three columns: a sealed paper note,
 // a polaroid + copy, and a voice note + short film.
 // IMAGE SLOT: the polaroid photo. (Video thumbnail is left as a placeholder.)
-
 import Image from "next/image";
 
 function PlayIcon({ className = "" }: { className?: string }) {
@@ -60,6 +59,21 @@ export function WhatItIs() {
             <p className="mt-4 font-script text-lg text-doodle">
               ↖ write it once, seal it for good
             </p>
+            {/* Second short film, tilted, filling the space below the note.
+                VIDEO SLOT: /landing/somedayvid2.mp4 */}
+            <div className="relative mt-6 aspect-video rotate-2 overflow-hidden rounded-lg border border-glass-border bg-gradient-to-br from-canvas to-surface shadow-2xl">
+              <video
+                src="/landing/somedayvid2.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="h-full w-full object-cover"
+              />
+              <span className="absolute bottom-2 left-3 text-xs text-ink/85">
+                the last morning
+              </span>
+            </div>
           </div>
 
           {/* Column 2 — polaroid + copy */}
@@ -111,12 +125,17 @@ export function WhatItIs() {
               </div>
             </div>
 
-            {/* IMAGE SLOT — video thumbnail (placeholder for a real video) */}
-            <div className="relative grid aspect-video place-items-center overflow-hidden rounded-lg bg-gradient-to-br from-surface to-canvas">
-              <span className="grid h-12 w-12 place-items-center rounded-full border border-ink/60">
-                <PlayIcon className="h-5 w-5 translate-x-[1px] text-ink" />
-              </span>
-              <span className="absolute bottom-3 left-3 text-xs text-ink/85">
+            {/* Short film on the right. VIDEO SLOT: /landing/somedayvid1.mp4 */}
+            <div className="relative aspect-video overflow-hidden rounded-lg border border-glass-border bg-gradient-to-br from-surface to-canvas shadow-xl">
+              <video
+                src="/landing/somedayvid1.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="h-full w-full object-cover"
+              />
+              <span className="absolute bottom-2 left-3 text-xs text-ink/85">
                 30 seconds, unedited
               </span>
             </div>
