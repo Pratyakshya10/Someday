@@ -128,31 +128,37 @@ body {
 @keyframes sdWave { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
 @keyframes sdSpin { to { transform: rotate(360deg); } }
 
-/* ---- Someday App (/app) prototype themes ---------------------------------
-   Utilities like bg-app-panel / text-app-dim reference these vars, and the
-   [data-app-theme="…"] blocks below override them per subtree — so switching
-   the theme in the sidebar re-skins the whole app. Default (below) = Noir. */
+/* Placeholder for the contenteditable letter surface (RichLetter). */
+.sd-letter:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-app-faint);
+  pointer-events: none;
+}
+
+/* ---- Someday App (/app) theme — warm light glass --------------------------
+   A soft dawn gradient behind frosted-glass cards. Dark warm ink on light.
+   The "accent" is a dark charcoal (primary buttons, seals, play controls);
+   text sitting ON it uses --color-app-on-accent (cream). */
 @theme {
-  --color-app-bg: #141110;
-  --color-app-bg2: #1c1714;
-  --color-app-panel: rgba(26, 22, 20, 0.66);
-  --color-app-surface: rgba(236, 228, 214, 0.05);
-  --color-app-text: #ece4d6;
-  --color-app-dim: #9c9086;
-  --color-app-faint: #6e655d;
-  --color-app-border: rgba(236, 228, 214, 0.12);
-  --color-app-accent: #c23b3b;
-  --color-app-accent-dim: rgba(194, 59, 59, 0.16);
+  --color-app-bg: #f7ecde;
+  --color-app-bg2: #f4dde6;
+  --color-app-panel: rgba(255, 255, 255, 0.55);
+  --color-app-surface: rgba(255, 255, 255, 0.5);
+  --color-app-text: #2b2621;
+  --color-app-dim: #6f665d;
+  --color-app-faint: #a3988c;
+  --color-app-border: rgba(43, 38, 33, 0.12);
+  --color-app-accent: #2b2621;
+  --color-app-accent-dim: rgba(43, 38, 33, 0.08);
+  --color-app-on-accent: #f8f2e8;
 }
-[data-app-theme="slate"] {
-  --color-app-bg: #161a1e; --color-app-bg2: #1f262c; --color-app-panel: rgba(31, 38, 44, 0.66); --color-app-surface: rgba(232, 236, 239, 0.05); --color-app-text: #e8ecef; --color-app-dim: #93a0aa; --color-app-faint: #5f6b74; --color-app-border: rgba(232, 236, 239, 0.12); --color-app-accent: #cf4747; --color-app-accent-dim: rgba(207, 71, 71, 0.16);
-}
-[data-app-theme="black"] {
-  --color-app-bg: #000000; --color-app-bg2: #0a0a0a; --color-app-panel: rgba(10, 10, 10, 0.7); --color-app-surface: rgba(255, 255, 255, 0.045); --color-app-text: #efefef; --color-app-dim: #8a8a8a; --color-app-faint: #565656; --color-app-border: rgba(255, 255, 255, 0.12); --color-app-accent: #e0403f; --color-app-accent-dim: rgba(224, 64, 63, 0.16);
-}
-[data-app-theme="crimson"] {
-  --color-app-bg: #190c0d; --color-app-bg2: #2a1315; --color-app-panel: rgba(42, 19, 21, 0.6); --color-app-surface: rgba(243, 226, 223, 0.05); --color-app-text: #f3e4e1; --color-app-dim: #c39a98; --color-app-faint: #8a5f5d; --color-app-border: rgba(243, 226, 223, 0.14); --color-app-accent: #e64b4b; --color-app-accent-dim: rgba(230, 75, 75, 0.2);
-}
-[data-app-theme="glass"] {
-  --color-app-bg: #100e0d; --color-app-bg2: #241d1a; --color-app-panel: rgba(255, 255, 255, 0.07); --color-app-surface: rgba(255, 255, 255, 0.08); --color-app-text: #f2ece2; --color-app-dim: #b6ada2; --color-app-faint: #7a7168; --color-app-border: rgba(255, 255, 255, 0.2); --color-app-accent: #d94444; --color-app-accent-dim: rgba(217, 68, 68, 0.18);
+
+/* The dawn gradient behind the whole app (fixed so it doesn't scroll). */
+.app-gradient {
+  background:
+    radial-gradient(85% 75% at 10% 6%, rgba(248, 214, 180, 0.85) 0%, rgba(248, 214, 180, 0) 55%),
+    radial-gradient(90% 85% at 94% 96%, rgba(244, 197, 214, 0.8) 0%, rgba(244, 197, 214, 0) 58%),
+    radial-gradient(65% 55% at 62% 42%, rgba(255, 251, 244, 0.9) 0%, rgba(255, 251, 244, 0) 62%),
+    linear-gradient(135deg, #f7ead8 0%, #f8f1e9 42%, #f4dce6 100%);
+  background-attachment: fixed;
 }
