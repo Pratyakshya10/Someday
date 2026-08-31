@@ -3,6 +3,7 @@
 // with inline styles reserved only for genuinely dynamic values (photo tint,
 // per-bar animation timing).
 import { useEffect, useState, type ReactNode } from "react";
+import { useChrome } from "./ChromeContext";
 
 /** A single-path line icon on a 24x24 grid. */
 export function Icon({ d, className = "h-[18px] w-[18px]" }: { d: string; className?: string }) {
@@ -25,14 +26,14 @@ export function Kicker({ children }: { children: ReactNode }) {
 
 /** Handwritten caption. */
 export function Doodle({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <span className={`font-script text-[26px] leading-[1.05] text-app-accent ${className}`}>{children}</span>;
+  return <span className={`font-script text-[21px] leading-[1.05] text-app-dim ${className}`}>{children}</span>;
 }
 
 export function PrimaryButton({ children, onClick, className = "" }: { children: ReactNode; onClick?: () => void; className?: string }) {
   return (
     <button
       onClick={onClick}
-      className={`group inline-flex items-center gap-2.5 rounded-[3px] bg-app-accent px-[30px] py-[15px] text-[13px] uppercase tracking-[0.14em] text-[#f6efe4] shadow-[0_10px_30px_rgba(0,0,0,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(0,0,0,0.5)] ${className}`}
+      className={`group inline-flex items-center gap-2 rounded-full bg-app-accent px-[26px] py-[11px] text-[12px] uppercase tracking-[0.16em] text-app-on-accent shadow-[0_10px_30px_rgba(43,38,33,0.2)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(43,38,33,0.28)] ${className}`}
     >
       {children}
       <span className="text-base transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -44,7 +45,7 @@ export function GhostButton({ children, onClick, className = "" }: { children: R
   return (
     <button
       onClick={onClick}
-      className={`rounded-[3px] border border-app-border bg-transparent px-[26px] py-3.5 text-[13px] uppercase tracking-[0.14em] text-app-text transition-all duration-300 hover:bg-app-surface ${className}`}
+      className={`rounded-full border border-app-border bg-transparent px-[22px] py-2.5 text-[12px] uppercase tracking-[0.16em] text-app-text transition-all duration-300 hover:bg-app-surface ${className}`}
     >
       {children}
     </button>
@@ -84,9 +85,15 @@ export function Waveform({ active }: { active: boolean }) {
 export function Countdown({ days, gap = "gap-3.5" }: { days: number; gap?: string }) {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
-    setNow(new Date());
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
+    const tick = () => setNow(new Date());
+    // Kick once right after mount (async, so it's not a setState *during* the
+    // effect), then keep ticking every second.
+    const kick = setTimeout(tick, 0);
+    const t = setInterval(tick, 1000);
+    return () => {
+      clearTimeout(kick);
+      clearInterval(t);
+    };
   }, []);
 
   const h = now ? 23 - now.getHours() : 0;
@@ -98,10 +105,10 @@ export function Countdown({ days, gap = "gap-3.5" }: { days: number; gap?: strin
     <div className={`flex ${gap}`}>
       {blocks.map(([val, label]) => (
         <div key={label} className="text-center">
-          <div className="min-w-[56px] font-serif text-[clamp(28px,4vw,44px)] font-semibold leading-none text-app-text">
+          <div className="min-w-[42px] font-serif text-[clamp(22px,3vw,34px)] font-semibold leading-none text-app-text">
             {String(val).padStart(2, "0")}
           </div>
-          <div className="mt-1.5 text-[10.5px] uppercase tracking-[0.2em] text-app-faint">{label}</div>
+          <div className="mt-1 text-[9.5px] uppercase tracking-[0.2em] text-app-faint">{label}</div>
         </div>
       ))}
     </div>
@@ -113,7 +120,7 @@ export function Grain() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-[-50%] z-[1] mix-blend-overlay opacity-[0.09]"
+      className="pointer-events-none fixed inset-[-50%] z-[1] mix-blend-soft-light opacity-[0.05]"
       style={{
         animation: "sdGrain 1.1s steps(2) infinite",
         backgroundImage:
@@ -129,16 +136,17 @@ export function Vignette() {
     <div
       aria-hidden
       className="pointer-events-none fixed inset-0 z-[1]"
-      style={{ background: "radial-gradient(120% 90% at 50% 42%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.5) 100%)" }}
+      style={{ background: "radial-gradient(120% 90% at 50% 42%, rgba(0,0,0,0) 52%, rgba(43,38,33,0.12) 100%)" }}
     />
   );
 }
 
 /** The scrolling area to the right of the fixed sidebar. */
-export function ScreenFrame({ collapsed, children, pad = true }: { collapsed: boolean; children: ReactNode; pad?: boolean }) {
+export function ScreenFrame({ children, pad = true }: { children: ReactNode; pad?: boolean }) {
+  const { collapsed } = useChrome();
   return (
     <main
-      className={`relative z-[2] min-h-screen text-app-text transition-[margin] duration-300 ${collapsed ? "ml-[76px]" : "ml-[248px]"} ${pad ? "p-[clamp(28px,5vw,72px)]" : ""}`}
+      className={`relative z-[2] min-h-screen text-app-text transition-[margin] duration-300 ${collapsed ? "ml-[76px]" : "ml-[248px]"} ${pad ? "p-[clamp(16px,3vw,40px)]" : ""}`}
     >
       {children}
     </main>
