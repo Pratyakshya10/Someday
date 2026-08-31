@@ -71,7 +71,7 @@ export function WhatItIs() {
                 className="h-full w-full object-cover"
               />
               <span className="absolute bottom-2 left-3 text-xs text-ink/85">
-                the last morning
+                the last evening
               </span>
             </div>
           </div>
