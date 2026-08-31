@@ -38,7 +38,7 @@ export function FinalCta() {
         <a
           data-reveal
           style={{ transitionDelay: "280ms" }}
-          href="/capsule/new"
+          href="/app/new"
           className="group mt-10 inline-flex items-center gap-3 bg-accent px-8 py-4 text-[11px] tracking-[0.2em] text-ink transition-colors hover:bg-accent-strong"
         >
           START YOUR CAPSULE

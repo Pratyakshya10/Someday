@@ -62,7 +62,7 @@ export function Together() {
         <a
           data-reveal
           style={{ transitionDelay: "370ms" }}
-          href="/capsule/new?type=group"
+          href="/app/new?type=group"
           className="group mt-8 inline-flex items-center gap-3 border border-ink/40 px-7 py-3.5 text-[11px] tracking-[0.2em] text-ink transition-colors hover:bg-ink hover:text-canvas"
         >
           START A SHARED CAPSULE
