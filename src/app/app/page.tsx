@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
-import SomedayApp from "./SomedayApp";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Someday · App",
-};
-
-export default function AppPage() {
-  return <SomedayApp />;
+// /app is just an entry point — send people to their vault.
+export default function AppIndex() {
+  redirect("/app/vault");
 }
