@@ -128,6 +128,12 @@ body {
 @keyframes sdWave { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
 @keyframes sdSpin { to { transform: rotate(360deg); } }
 
+/* Vintage instant-film look for videos — warm, slightly faded, a touch of
+   contrast — so clips read like an old polaroid/Super-8 recording. */
+.sd-film {
+  filter: sepia(0.32) saturate(0.82) contrast(1.06) brightness(1.03) hue-rotate(-6deg);
+}
+
 /* Placeholder for the contenteditable letter surface (RichLetter). */
 .sd-letter:empty::before {
   content: attr(data-placeholder);
