@@ -1,7 +1,24 @@
 "use client";
-import type { AppApi } from "../types";
-import { SAMPLE, OPENED, type CapsuleShape } from "../data";
+import Link from "next/link";
+import type { CapsuleView } from "../types";
+import { type CapsuleShape } from "../data";
 import { Kicker, PrimaryButton, Photo, Countdown, Icon, ScreenFrame } from "../components/ui";
+import { stripVoiceTokens } from "../letter";
+
+// We don't store a cover shape/tint per capsule, so derive a stable one from
+// its id — the same capsule always looks the same.
+const TINTS = ["#2b2b2e", "#343434", "#26262a", "#2f2d2a", "#38352f"];
+const SHAPES: CapsuleShape[] = ["envelope", "box", "reel"];
+function hash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function daysUntil(iso: string | null): number {
+  if (!iso) return 0;
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
+}
 
 /** A locked object — envelope, box, or film reel — over a tinted photo. */
 function CapsuleObject({ obj, tint }: { obj: CapsuleShape; tint: string }) {
@@ -28,56 +45,91 @@ function CapsuleObject({ obj, tint }: { obj: CapsuleShape; tint: string }) {
   );
 }
 
-export function Vault({ app }: { app: AppApi }) {
-  const list = app.sampleData === "empty" ? [] : app.sampleData === "one" ? SAMPLE.slice(0, 1) : SAMPLE;
-  const opened = app.capsuleState === "unlocked" || app.sampleData === "empty" ? [] : OPENED;
-  const locked = app.capsuleState !== "unlocked";
+function statusOf(c: CapsuleView): "draft" | "locked" | "open" {
+  if (c.status === "draft") return "draft";
+  const due = c.unlockDate != null && new Date(c.unlockDate).getTime() <= Date.now();
+  if (c.status === "unlocked" || due) return "open";
+  return "locked";
+}
+
+export function Vault({ capsules }: { capsules: CapsuleView[] }) {
+  const active = capsules.filter((c) => statusOf(c) !== "open");
+  const opened = capsules.filter((c) => statusOf(c) === "open");
 
   return (
-    <ScreenFrame collapsed={app.collapsed}>
+    <ScreenFrame>
       <div className="mx-auto max-w-[1180px] animate-[sdRise_0.7s_both]">
-        <div className="mb-[34px] flex flex-wrap items-end justify-between gap-4">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <Kicker>Your vault</Kicker>
-            <h1 className="font-serif text-[clamp(34px,5vw,66px)] font-medium leading-none tracking-[-0.01em]">
+            <h1 className="font-serif text-[clamp(24px,3.2vw,40px)] font-medium leading-none tracking-[-0.01em]">
               Sealed, and <span className="italic">waiting.</span>
             </h1>
           </div>
-          <PrimaryButton onClick={() => app.go("new")}>New capsule</PrimaryButton>
+          <Link href="/app/new">
+            <PrimaryButton>New capsule</PrimaryButton>
+          </Link>
         </div>
 
-        {list.length === 0 ? (
+        {active.length === 0 && opened.length === 0 ? (
           <div className="rounded-xl border border-dashed border-app-border bg-app-surface p-[80px_30px] text-center">
             <div className="mb-2.5 font-script text-[28px] text-app-dim">nothing sealed yet</div>
             <div className="mb-4 font-serif text-3xl">Your vault is empty</div>
-            <PrimaryButton onClick={() => app.go("new")} className="mt-1">Write your first letter</PrimaryButton>
+            <Link href="/app/new">
+              <PrimaryButton className="mt-1">Write your first letter</PrimaryButton>
+            </Link>
           </div>
         ) : (
           <div className="[column-gap:22px] [column-width:290px]">
-            {list.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => app.go("reveal")}
-                className="mb-[22px] block cursor-pointer overflow-hidden rounded-xl border border-app-border bg-app-surface shadow-[0_14px_34px_rgba(0,0,0,0.3)] transition-all duration-300 [break-inside:avoid] hover:-translate-y-[5px] hover:shadow-[0_26px_60px_rgba(0,0,0,0.5)]"
-              >
-                <div className="relative">
-                  <CapsuleObject obj={c.obj} tint={c.tint} />
-                  <div className={`absolute inset-0 ${locked ? "bg-gradient-to-b from-black/15 to-black/55" : "bg-gradient-to-b from-black/10 to-black/35"}`} />
-                  <div className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-[5px] text-[10px] uppercase tracking-[0.14em] text-[#f0e6d8]">
-                    <Icon
-                      d={locked ? "M6 10V8a6 6 0 0 1 12 0v2M5 10h14v10H5z" : "M6 10V8a6 6 0 0 1 11-2M5 10h14v10H5z"}
-                      className="h-[11px] w-[11px]"
-                    />
-                    {locked ? "Sealed" : "Open"}
+            {active.map((c) => {
+              const st = statusOf(c);
+              const obj = SHAPES[hash(c.id) % SHAPES.length];
+              const tint = TINTS[hash(c.id) % TINTS.length];
+              const href = st === "draft" ? `/app/capsule/${c.id}/editor` : `/app/capsule/${c.id}`;
+              return (
+                <Link
+                  key={c.id}
+                  href={href}
+                  className="mb-[22px] block cursor-pointer overflow-hidden rounded-xl border border-app-border bg-app-surface shadow-[0_14px_34px_rgba(43,38,33,0.09)] transition-all duration-300 [break-inside:avoid] hover:-translate-y-[5px] hover:shadow-[0_26px_60px_rgba(43,38,33,0.12)]"
+                >
+                  <div className="relative">
+                    <CapsuleObject obj={obj} tint={tint} />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/15 to-black/55" />
+                    {c.type === "group" && (
+                      <div className="absolute left-3 top-3 inline-flex items-center rounded-full bg-black/50 px-2.5 py-[5px] text-[10px] uppercase tracking-[0.14em] text-[#f0e6d8]">
+                        Group
+                      </div>
+                    )}
+                    <div className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-[5px] text-[10px] uppercase tracking-[0.14em] text-[#f0e6d8]">
+                      <Icon
+                        d={st === "draft" ? "M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" : "M6 10V8a6 6 0 0 1 12 0v2M5 10h14v10H5z"}
+                        className="h-[11px] w-[11px]"
+                      />
+                      {st === "draft" ? "Draft" : "Sealed"}
+                    </div>
                   </div>
-                </div>
-                <div className="p-[18px_18px_20px]">
-                  <div className="mb-1.5 text-[11px] uppercase tracking-[0.14em] text-app-faint">{c.to}</div>
-                  <div className={`font-serif text-[26px] font-medium ${locked ? "mb-3.5" : "mb-2"}`}>{c.title}</div>
-                  {locked ? <Countdown days={c.days} gap="gap-2.5" /> : <p className="text-sm leading-[1.55] text-app-dim">{c.excerpt}</p>}
-                </div>
-              </div>
-            ))}
+                  <div className="p-[18px_18px_20px]">
+                    <div className="mb-1.5 text-[11px] uppercase tracking-[0.14em] text-app-faint">
+                      {c.recipient ? `To — ${c.recipient}` : " "}
+                    </div>
+                    <div className="mb-3.5 font-serif text-[26px] font-medium">{c.title || "Untitled capsule"}</div>
+                    {st === "draft" ? (
+                      <p className="text-sm leading-[1.55] text-app-dim">Not sealed yet — pick up where you left off.</p>
+                    ) : c.unlockType === "location" ? (
+                      <p className="text-sm leading-[1.55] text-app-dim">
+                        Opens at {c.unlockPlaceLabel?.trim() || "a place you chose"}.
+                      </p>
+                    ) : c.unlockType === "milestone" ? (
+                      <p className="text-sm leading-[1.55] text-app-dim">
+                        Opens when: <span className="italic text-app-text">{c.unlockMilestone?.trim() || "a milestone"}</span>
+                      </p>
+                    ) : (
+                      <Countdown days={daysUntil(c.unlockDate)} gap="gap-2.5" />
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
 
@@ -88,22 +140,29 @@ export function Vault({ app }: { app: AppApi }) {
               <span className="h-px flex-1 bg-app-border" />
             </div>
             <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
-              {opened.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => app.go("reveal")}
-                  className="flex cursor-pointer gap-3.5 overflow-hidden rounded-[10px] border border-app-border bg-app-surface"
-                >
-                  <div className="w-[92px] shrink-0">
-                    <Photo tint={c.tint} />
-                  </div>
-                  <div className="p-[14px_14px_14px_4px]">
-                    <div className="mb-1 text-[11px] text-app-faint">{c.to}</div>
-                    <div className="mb-1.5 font-serif text-xl">{c.title}</div>
-                    <p className="text-[13px] leading-[1.5] text-app-dim">{c.excerpt}</p>
-                  </div>
-                </div>
-              ))}
+              {opened.map((c) => {
+                const tint = TINTS[hash(c.id) % TINTS.length];
+                const clean = stripVoiceTokens(c.body ?? "");
+                const excerpt = clean.slice(0, 90);
+                return (
+                  <Link
+                    key={c.id}
+                    href={`/app/capsule/${c.id}`}
+                    className="flex cursor-pointer gap-3.5 overflow-hidden rounded-[10px] border border-app-border bg-app-surface"
+                  >
+                    <div className="w-[92px] shrink-0">
+                      <Photo tint={tint} />
+                    </div>
+                    <div className="p-[14px_14px_14px_4px]">
+                      <div className="mb-1 text-[11px] text-app-faint">{c.recipient ? `To — ${c.recipient}` : ""}</div>
+                      <div className="mb-1.5 font-serif text-xl">{c.title || "Untitled capsule"}</div>
+                      <p className="text-[13px] leading-[1.5] text-app-dim">
+                        {excerpt ? `${excerpt}${clean.length > 90 ? "…" : ""}` : "Opened."}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
