@@ -1,28 +1,20 @@
 {
-  "name": "someday-frontend",
+  "name": "someday",
   "version": "0.1.0",
   "private": true,
+  "description": "Someday — a digital time capsule app. Write letters to your future self, seal them, and have them delivered on a chosen date.",
+  "workspaces": [
+    "Frontend",
+    "Backend"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@someday/backend": "*",
-    "@supabase/ssr": "^0.12.5",
-    "next": "16.3.1",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.1",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "dev": "npm run dev --workspace someday-frontend",
+    "build": "npm run build --workspace someday-frontend",
+    "start": "npm run start --workspace someday-frontend",
+    "lint": "npm run lint --workspace someday-frontend",
+    "prisma:generate": "npm run prisma:generate --workspace @someday/backend",
+    "prisma:migrate": "npm run prisma:migrate --workspace @someday/backend",
+    "prisma:studio": "npm run prisma:studio --workspace @someday/backend",
+    "db:push": "npm run db:push --workspace @someday/backend"
   }
 }

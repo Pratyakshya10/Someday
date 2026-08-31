@@ -1,0 +1,217 @@
+// Someday — database schema.
+//
+// Prisma reads this ONE file to do two jobs:
+//   1) build/update the real tables in your Supabase database (migrations)
+//   2) generate a typed client your code uses to query them (db.capsule.create…)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled connection — the app uses this at runtime
+  directUrl = env("DIRECT_URL")   // direct connection — used only for migrations
+}
+
+// ─────────────────────────────────────────────────────────────
+// Enums — a value that must be ONE of a fixed set. Postgres enforces
+// this, so an invalid value can never get into the database.
+// ─────────────────────────────────────────────────────────────
+
+enum CapsuleType {
+  solo
+  group
+}
+
+enum UnlockType {
+  date
+  location
+  milestone
+}
+
+enum CapsuleStatus {
+  draft
+  sealed
+  unlocked
+}
+
+// The kinds of media that can ride along with a letter.
+enum AttachmentKind {
+  voice
+  photo
+  video
+}
+
+// A person's role on a group capsule.
+enum MemberRole {
+  owner  // created it; edits meta, manages people, seals
+  editor // writes their own note + media
+  viewer // can only read it, once opened
+}
+
+// ─────────────────────────────────────────────────────────────
+// Capsule — one sealed time capsule. Becomes a table named "capsules".
+// Each line below is one column.
+// ─────────────────────────────────────────────────────────────
+
+model Capsule {
+  // Primary key: a unique id for every row. The DB generates a UUID
+  // automatically. @db.Uuid stores it as Postgres' real `uuid` type.
+  id String @id @default(uuid()) @db.Uuid
+
+  // The owner = the logged-in user's id from Supabase Auth. Supabase manages
+  // the users table for us, so here we just store that id.
+  ownerId String @map("owner_id") @db.Uuid
+
+  // Solo or group. Defaults to solo.
+  type CapsuleType @default(solo)
+
+  // ── The letter itself ──────────────────────────────────────
+  // Which starter prompt the writer chose ("future", "miss", …). Free text so
+  // the app can add templates without a migration.
+  template String?
+
+  // The "To —" line at the top of the letter, e.g. "Future Me".
+  recipient String?
+
+  // A short title for the capsule, shown in the vault.
+  title String?
+
+  // The letter's body — the actual words being sealed.
+  body String?
+
+  // Its stage of life: draft → sealed → unlocked. Starts as draft.
+  status CapsuleStatus @default(draft)
+
+  // How it unlocks. Phase 1 uses date; location/milestone come later.
+  unlockType UnlockType @default(date) @map("unlock_type")
+
+  // The delivery date. The "?" makes it OPTIONAL (a draft has none yet).
+  unlockDate DateTime? @map("unlock_date")
+
+  // Location unlock: opens when the reader is within `unlock_radius_m` metres of
+  // (lat, lng). The label is a human name for the place ("our old street").
+  unlockLat        Float?  @map("unlock_lat")
+  unlockLng        Float?  @map("unlock_lng")
+  unlockRadiusM    Int?    @map("unlock_radius_m")
+  unlockPlaceLabel String? @map("unlock_place_label")
+
+  // Milestone unlock: opens when the reader confirms this life event happened.
+  unlockMilestone String? @map("unlock_milestone")
+
+  // Opt-in to share an anonymized version on the community wall after unlock.
+  isPublic Boolean @default(false) @map("is_public")
+
+  // Timestamps. Optional ones stay null until that event happens.
+  sealedAt   DateTime? @map("sealed_at")
+  unlockedAt DateTime? @map("unlocked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  // Media sealed alongside the letter. Deleting a capsule deletes its media.
+  attachments Attachment[]
+
+  // Group capsules: who's in it, pending invites, and each person's note.
+  members       CapsuleMember[]
+  invites       CapsuleInvite[]
+  contributions Contribution[]
+
+  // The real table name in the database (snake_case, plural).
+  @@map("capsules")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CapsuleMember — one person's membership + role on a group capsule.
+// ─────────────────────────────────────────────────────────────
+
+model CapsuleMember {
+  id String @id @default(uuid()) @db.Uuid
+
+  capsuleId String  @map("capsule_id") @db.Uuid
+  capsule   Capsule @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+
+  userId String     @map("user_id") @db.Uuid // Supabase user id
+  role   MemberRole
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([capsuleId, userId])
+  @@index([userId])
+  @@map("capsule_members")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CapsuleInvite — a way in. A link invite (email null) can be used by anyone
+// who has the token; an email invite is claimed by whoever signs in with that
+// address. `role` is the access granted on join.
+// ─────────────────────────────────────────────────────────────
+
+model CapsuleInvite {
+  id String @id @default(uuid()) @db.Uuid
+
+  capsuleId String  @map("capsule_id") @db.Uuid
+  capsule   Capsule @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+
+  token String     @unique
+  email String?    // null = shareable link; set = invite for a specific address
+  role  MemberRole @default(editor)
+
+  acceptedBy String?   @map("accepted_by") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([capsuleId])
+  @@map("capsule_invites")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Contribution — one member's note within a group capsule (the owner and each
+// editor get one). Media is linked by uploader (Attachment.owner_id = author).
+// ─────────────────────────────────────────────────────────────
+
+model Contribution {
+  id String @id @default(uuid()) @db.Uuid
+
+  capsuleId String  @map("capsule_id") @db.Uuid
+  capsule   Capsule @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+
+  authorId String @map("author_id") @db.Uuid
+  body     String @default("")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([capsuleId, authorId])
+  @@map("contributions")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Attachment — one piece of media (voice note, photo, or short film)
+// belonging to a capsule. The bytes live in object storage; this row keeps
+// the pointer (storagePath) plus enough metadata to render it.
+// ─────────────────────────────────────────────────────────────
+
+model Attachment {
+  id String @id @default(uuid()) @db.Uuid
+
+  capsuleId String  @map("capsule_id") @db.Uuid
+  capsule   Capsule @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+
+  // Denormalized owner id — lets us authorize a read/delete without a join.
+  ownerId String @map("owner_id") @db.Uuid
+
+  kind AttachmentKind
+
+  // Where the bytes live in the storage bucket, e.g. "<owner>/<capsule>/<id>.webm".
+  storagePath String @map("storage_path")
+
+  mimeType  String @map("mime_type")
+  sizeBytes Int    @map("size_bytes")
+
+  // Length in seconds for voice / video (null for photos).
+  durationSec Int? @map("duration_sec")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([capsuleId])
+  @@map("attachments")
+}

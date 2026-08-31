@@ -1,0 +1,7 @@
+# dependencies
+node_modules/
+
+# secrets — never commit real keys (use .env.example as the template)
+.env
+.env.local
+.env.*.local
