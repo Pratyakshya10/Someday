@@ -4,8 +4,15 @@
 // keep or retake. Hands the finished clip back as a File.
 
 import { useEffect, useRef, useState } from "react";
+import { FilmHud } from "./FilmHud";
 
 type Phase = "requesting" | "ready" | "recording" | "recorded" | "error";
+
+/** Seconds -> camcorder timecode HH:MM:SS:FF (frames shown as 00). */
+function timecode(sec: number): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(Math.floor(sec / 3600))}:${p(Math.floor((sec % 3600) / 60))}:${p(Math.floor(sec % 60))}:00`;
+}
 
 function pickMime(mode: "voice" | "video"): string {
   const candidates =
@@ -141,15 +148,20 @@ export function Recorder({
         </div>
 
         {mode === "video" && phase !== "recorded" && (
-          <div className="mb-4 aspect-video w-full overflow-hidden rounded-lg border border-app-border bg-black">
+          <div className="relative mb-4 aspect-video w-full overflow-hidden rounded-lg border border-app-border bg-black">
             <video ref={previewVideo} className="sd-film h-full w-full object-cover" playsInline />
+            <div className="sd-grain" />
+            <FilmHud recording={phase === "recording"} timecode={timecode(elapsed)} />
           </div>
         )}
 
         {phase === "recorded" && result && (
           <div className="mb-4">
             {mode === "video" ? (
-              <video src={result.url} controls className="sd-film aspect-video w-full rounded-lg border border-app-border bg-black" />
+              <div className="relative overflow-hidden rounded-lg border border-app-border bg-black">
+                <video src={result.url} controls className="sd-film aspect-video w-full" />
+                <div className="sd-grain" />
+              </div>
             ) : (
               <audio src={result.url} controls className="w-full" />
             )}
