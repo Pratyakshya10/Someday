@@ -57,7 +57,7 @@ export function Hero() {
               film and choose the day it finds you again.
             </p>
             <a
-              href="/capsule/new"
+              href="/app/new"
               className="group inline-flex w-fit items-center gap-3 bg-accent px-7 py-3.5 text-[11px] tracking-[0.2em] text-ink transition-colors hover:bg-accent-strong"
             >
               SEAL YOUR FIRST CAPSULE
