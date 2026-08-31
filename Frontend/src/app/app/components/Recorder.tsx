@@ -142,14 +142,14 @@ export function Recorder({
 
         {mode === "video" && phase !== "recorded" && (
           <div className="mb-4 aspect-video w-full overflow-hidden rounded-lg border border-app-border bg-black">
-            <video ref={previewVideo} className="h-full w-full object-cover" playsInline />
+            <video ref={previewVideo} className="sd-film h-full w-full object-cover" playsInline />
           </div>
         )}
 
         {phase === "recorded" && result && (
           <div className="mb-4">
             {mode === "video" ? (
-              <video src={result.url} controls className="aspect-video w-full rounded-lg border border-app-border bg-black" />
+              <video src={result.url} controls className="sd-film aspect-video w-full rounded-lg border border-app-border bg-black" />
             ) : (
               <audio src={result.url} controls className="w-full" />
             )}
