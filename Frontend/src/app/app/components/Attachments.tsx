@@ -111,8 +111,9 @@ export function MediaItem({ a }: { a: AttachmentView }) {
       </div>
     );
   return (
-    <div className="overflow-hidden rounded-lg bg-black shadow-[0_12px_30px_rgba(43,38,33,0.16)]">
-      <video src={a.url} controls className="block max-h-[320px] w-full" />
+    // Polaroid frame + vintage film filter, matching the photo look.
+    <div className="rounded-[3px] bg-white p-2 pb-3 shadow-[0_12px_30px_rgba(43,38,33,0.16)]">
+      <video src={a.url} controls className="sd-film block max-h-[300px] w-full rounded-[1px] bg-black" />
     </div>
   );
 }
