@@ -1,45 +1,73 @@
-// Shared types for the Someday app prototype.
+// Shared types for the Someday app.
 
-export type ScreenKey =
-  | "auth"
-  | "new"
-  | "editor"
-  | "delivery"
-  | "sealing"
-  | "vault"
-  | "reveal";
-
-export type ThemeKey = "noir" | "slate" | "black" | "crimson" | "glass";
 export type CapsuleType = "solo" | "group";
 export type UnlockType = "date" | "location" | "milestone";
-export type CapsuleState = "draft" | "sealed" | "unlocked";
-export type SampleData = "empty" | "one" | "many";
+export type CapsuleStatus = "draft" | "sealed" | "unlocked";
 export type TemplateKey = "future" | "miss" | "predict" | "confess" | "blank";
+export type AttachmentKind = "voice" | "photo" | "video";
 
-// The single object of state + setters passed down to the sidebar and screens.
-export interface AppApi {
-  screen: ScreenKey;
-  go: (screen: ScreenKey) => void;
+// One media item as it crosses to the client — `url` is a short-lived signed
+// URL the browser can load directly.
+export interface AttachmentView {
+  id: string;
+  kind: AttachmentKind;
+  mimeType: string;
+  sizeBytes: number;
+  durationSec: number | null;
+  url: string;
+}
 
-  theme: ThemeKey;
-  setTheme: (theme: ThemeKey) => void;
+// A capsule as it crosses from the server into a Client Component. Dates are
+// serialized to ISO strings (or null) because plain objects — not Date
+// instances — are what can be passed across that boundary.
+export interface CapsuleView {
+  id: string;
+  type: CapsuleType;
+  status: CapsuleStatus;
+  unlockType: UnlockType;
+  unlockDate: string | null;
+  unlockLat: number | null;
+  unlockLng: number | null;
+  unlockRadiusM: number | null;
+  unlockPlaceLabel: string | null;
+  unlockMilestone: string | null;
+  template: string | null;
+  recipient: string | null;
+  title: string | null;
+  body: string | null;
+  sealedAt: string | null;
+  unlockedAt: string | null;
+  createdAt: string;
+}
 
+export type MemberRole = "owner" | "editor" | "viewer";
+
+export interface MemberView {
+  userId: string;
+  email: string | null;
+  role: MemberRole;
+  isYou: boolean;
+}
+
+export interface InviteView {
+  id: string;
+  email: string | null;
+  role: MemberRole;
+  token: string;
+  accepted: boolean;
+}
+
+// One member's note in a group capsule, with their media, for the reveal.
+export interface ContributionView {
+  authorId: string;
+  authorEmail: string | null;
+  body: string;
+  attachments: AttachmentView[];
+  isYou: boolean;
+}
+
+// The chrome (sidebar collapse) shared by every /app page, provided via context.
+export interface ChromeApi {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
-
-  capsuleType: CapsuleType;
-  setCapsuleType: (v: CapsuleType) => void;
-  predictions: boolean;
-  setPredictions: (v: boolean) => void;
-  unlockType: UnlockType;
-  setUnlockType: (v: UnlockType) => void;
-  capsuleState: CapsuleState;
-  setCapsuleState: (v: CapsuleState) => void;
-  sampleData: SampleData;
-  setSampleData: (v: SampleData) => void;
-
-  template: TemplateKey;
-  setTemplate: (v: TemplateKey) => void;
-  letter: string;
-  setLetter: (v: string) => void;
 }
