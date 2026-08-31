@@ -18,7 +18,7 @@ export function Nav() {
             TOGETHER
           </a>
           <a
-            href="/capsule/new"
+            href="/app/new"
             className="border border-ink/40 px-5 py-2.5 text-ink transition-colors hover:bg-ink hover:text-canvas"
           >
             GET STARTED
