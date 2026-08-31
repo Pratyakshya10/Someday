@@ -111,9 +111,12 @@ export function MediaItem({ a }: { a: AttachmentView }) {
       </div>
     );
   return (
-    // Polaroid frame + vintage film filter, matching the photo look.
+    // Polaroid frame + vintage film filter with grain, matching the photo look.
     <div className="rounded-[3px] bg-white p-2 pb-3 shadow-[0_12px_30px_rgba(43,38,33,0.16)]">
-      <video src={a.url} controls className="sd-film block max-h-[300px] w-full rounded-[1px] bg-black" />
+      <div className="relative overflow-hidden rounded-[1px] bg-black">
+        <video src={a.url} controls className="sd-film block max-h-[300px] w-full" />
+        <div className="sd-grain" />
+      </div>
     </div>
   );
 }
