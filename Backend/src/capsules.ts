@@ -27,10 +27,18 @@ export function listCapsules(ownerId: string): Promise<Capsule[]> {
   });
 }
 
-/** Every capsule you can see — ones you own, plus group capsules you're in. */
+/**
+ * Every capsule you can see in the vault — ones you own, plus group capsules
+ * you're in. Capsules that back a scheduled message (`scheduled` is set) are the
+ * content of a letter addressed to someone else and live on the Scheduled page,
+ * so they're excluded here.
+ */
 export function listUserCapsules(userId: string): Promise<Capsule[]> {
   return db.capsule.findMany({
-    where: { OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
+    where: {
+      scheduled: null,
+      OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+    },
     orderBy: { createdAt: "desc" },
   });
 }

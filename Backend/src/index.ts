@@ -71,6 +71,19 @@ export {
   type Contact,
 } from "./contacts";
 
+// Scheduled messages — letters addressed to a contact, delivered by email.
+export {
+  createScheduledDraft,
+  getScheduled,
+  getScheduledByCapsule,
+  listScheduled,
+  scheduleMessage,
+  unscheduleMessage,
+  deleteScheduled,
+  type ScheduledMessage,
+  type ScheduledWithRelations,
+} from "./scheduled";
+
 export {
   MEDIA_BUCKET,
   uploadObject,
