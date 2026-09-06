@@ -8,6 +8,7 @@ export const ICONS: Record<string, string> = {
   delivery: "M7 3v3M17 3v3M4 8h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z",
   sealing: "M12 2a5 5 0 0 1 5 5c0 2.5-2 4.2-3 5l1 8-3-2-3 2 1-8c-1-.8-3-2.5-3-5a5 5 0 0 1 5-5Z",
   vault: "M4 5h16v14H4zM4 9h16M9 13h6",
+  scheduled: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
   reveal: "M12 3l2.2 5.6L20 10l-5.8 1.4L12 17l-2.2-5.6L4 10l5.8-1.4Z",
   voice: "M12 3a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3ZM6 11a6 6 0 0 0 12 0M12 17v4",
   photos: "M4 5h16v14H4zM4 16l4-4 4 4 3-3 5 5",
@@ -20,6 +21,7 @@ export const ICONS: Record<string, string> = {
 export const NAV: { href: string; label: string; icon: string }[] = [
   { href: "/app/vault", label: "Your vault", icon: ICONS.vault },
   { href: "/app/new", label: "New capsule", icon: ICONS.new },
+  { href: "/app/scheduled", label: "Scheduled", icon: ICONS.scheduled },
 ];
 
 // The three cover shapes a vault card can wear (chosen deterministically per id).
