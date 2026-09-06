@@ -50,6 +50,21 @@ enum MemberRole {
   viewer // can only read it, once opened
 }
 
+// Delivery lifecycle of a message scheduled to a contact.
+enum ScheduledStatus {
+  draft     // still being written
+  scheduled // locked in with a send time
+  sent
+  failed
+  canceled
+}
+
+// How often a scheduled message repeats.
+enum Recurrence {
+  none
+  yearly
+}
+
 // ─────────────────────────────────────────────────────────────
 // Capsule — one sealed time capsule. Becomes a table named "capsules".
 // Each line below is one column.
@@ -115,6 +130,10 @@ model Capsule {
   members       CapsuleMember[]
   invites       CapsuleInvite[]
   contributions Contribution[]
+
+  // If set, this capsule is the content of a message scheduled to a contact
+  // (rather than a self/group capsule shown in the vault).
+  scheduled ScheduledMessage?
 
   // The real table name in the database (snake_case, plural).
   @@map("capsules")
@@ -231,7 +250,42 @@ model Contact {
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  scheduledMessages ScheduledMessage[]
+
   @@unique([ownerId, email])
   @@index([ownerId])
   @@map("contacts")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ScheduledMessage — a letter (its content lives in a linked Capsule) addressed
+// to a Contact, to be delivered by email at `sendAt`.
+// ─────────────────────────────────────────────────────────────
+
+model ScheduledMessage {
+  id String @id @default(uuid()) @db.Uuid
+
+  ownerId String @map("owner_id") @db.Uuid // Supabase user id who scheduled it
+
+  // The content (letter + media) reuses a Capsule, one-to-one.
+  capsuleId String  @unique @map("capsule_id") @db.Uuid
+  capsule   Capsule @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+
+  // Who it's for.
+  contactId String  @map("contact_id") @db.Uuid
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  // When to send. Null while it's still a draft.
+  sendAt DateTime? @map("send_at")
+
+  status     ScheduledStatus @default(draft)
+  recurrence Recurrence      @default(none)
+  occasion   String?
+
+  sentAt    DateTime? @map("sent_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([ownerId])
+  @@index([status, sendAt]) // the delivery worker scans due, scheduled rows
+  @@map("scheduled_messages")
 }
