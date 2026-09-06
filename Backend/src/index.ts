@@ -62,6 +62,15 @@ export {
 
 export { getUserEmail, getUserEmails } from "./admin";
 
+// Contacts — people a user can schedule messages to.
+export {
+  listContacts,
+  getContact,
+  addContact,
+  deleteContact,
+  type Contact,
+} from "./contacts";
+
 export {
   MEDIA_BUCKET,
   uploadObject,
