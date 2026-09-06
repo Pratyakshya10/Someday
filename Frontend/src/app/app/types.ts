@@ -66,6 +66,15 @@ export interface ContributionView {
   isYou: boolean;
 }
 
+// A saved contact — someone you can schedule a message to.
+export interface ContactView {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  createdAt: string;
+}
+
 // The chrome (sidebar collapse) shared by every /app page, provided via context.
 export interface ChromeApi {
   collapsed: boolean;
