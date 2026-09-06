@@ -1,12 +1,26 @@
 // Turn a database Capsule (with real Date objects) into a plain, JSON-safe
 // CapsuleView that a Server Component can hand to a Client Component.
 
-import { signedUrl, type Capsule, type Attachment, type CapsuleMember, type Contribution, type Contact } from "@someday/backend";
-import type { CapsuleView, AttachmentView, MemberView, ContributionView, ContactView } from "@/app/app/types";
+import { signedUrl, type Capsule, type Attachment, type CapsuleMember, type Contribution, type Contact, type ScheduledWithRelations } from "@someday/backend";
+import type { CapsuleView, AttachmentView, MemberView, ContributionView, ContactView, ScheduledView } from "@/app/app/types";
 
 /** A Contact row -> its JSON-safe client view. */
 export function toContactView(c: Contact): ContactView {
   return { id: c.id, name: c.name, email: c.email, phone: c.phone, createdAt: c.createdAt.toISOString() };
+}
+
+/** A ScheduledMessage (with its capsule + contact) -> JSON-safe client view. */
+export function toScheduledView(s: ScheduledWithRelations): ScheduledView {
+  return {
+    id: s.id,
+    status: s.status,
+    sendAt: s.sendAt ? s.sendAt.toISOString() : null,
+    occasion: s.occasion,
+    sentAt: s.sentAt ? s.sentAt.toISOString() : null,
+    createdAt: s.createdAt.toISOString(),
+    contact: toContactView(s.contact),
+    capsule: toCapsuleView(s.capsule),
+  };
 }
 
 export function toCapsuleView(c: Capsule): CapsuleView {
