@@ -215,3 +215,23 @@ model Attachment {
   @@index([capsuleId])
   @@map("attachments")
 }
+
+// ─────────────────────────────────────────────────────────────
+// Contact — someone a user can schedule a message to. Scoped to the owner.
+// ─────────────────────────────────────────────────────────────
+
+model Contact {
+  id String @id @default(uuid()) @db.Uuid
+
+  ownerId String @map("owner_id") @db.Uuid // Supabase user id who owns this contact
+
+  name  String
+  email String
+  phone String? // reserved for a future SMS channel
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([ownerId, email])
+  @@index([ownerId])
+  @@map("contacts")
+}
