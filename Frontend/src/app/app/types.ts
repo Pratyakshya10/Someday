@@ -75,6 +75,21 @@ export interface ContactView {
   createdAt: string;
 }
 
+export type ScheduledStatus = "draft" | "scheduled" | "sent" | "failed" | "canceled";
+
+// A scheduled message as it crosses to the client: the delivery lifecycle plus
+// the recipient and the backing capsule that holds its words + media.
+export interface ScheduledView {
+  id: string;
+  status: ScheduledStatus;
+  sendAt: string | null;
+  occasion: string | null;
+  sentAt: string | null;
+  createdAt: string;
+  contact: ContactView;
+  capsule: CapsuleView;
+}
+
 // The chrome (sidebar collapse) shared by every /app page, provided via context.
 export interface ChromeApi {
   collapsed: boolean;
