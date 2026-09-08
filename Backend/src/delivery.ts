@@ -1,0 +1,118 @@
+// Delivery — turns a due ScheduledMessage into an email with a private reveal
+// link, sends it via Resend, and records the outcome. This is what the cron
+// route calls; it can also send a single message on demand (for a test).
+
+import { sendEmail } from "./email";
+import { getUserEmail } from "./admin";
+import { getScheduled, listDueMessages, markSent, markFailed, type ScheduledWithRelations } from "./scheduled";
+
+/** Build the reveal URL for a message from a base origin. */
+export function revealUrl(baseUrl: string, token: string): string {
+  return `${baseUrl.replace(/\/$/, "")}/r/${token}`;
+}
+
+/** The email a recipient receives — plain, warm, and link-first. */
+function renderEmail(input: {
+  recipientName: string;
+  senderName: string;
+  occasion: string | null;
+  url: string;
+}): { subject: string; html: string; text: string } {
+  const { recipientName, senderName, occasion, url } = input;
+  const subject = occasion
+    ? `A letter for you — ${occasion}`
+    : `${senderName} left you a letter`;
+
+  const text =
+    `Hi ${recipientName},\n\n` +
+    `${senderName} wrote you a letter and asked Someday to deliver it today` +
+    `${occasion ? ` — ${occasion}` : ""}.\n\n` +
+    `Open it here: ${url}\n\n— Someday`;
+
+  const html = `<!doctype html>
+<html>
+  <body style="margin:0;background:#f7ecde;font-family:Georgia,'Times New Roman',serif;color:#2b2621;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
+      <tr><td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#fffaf3;border:1px solid #e7dccb;border-radius:16px;padding:40px;">
+          <tr><td style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:#a99a86;padding-bottom:20px;">Someday</td></tr>
+          <tr><td style="font-size:26px;line-height:1.25;padding-bottom:16px;">A letter was kept for you${occasion ? `,<br><em>${escapeHtml(occasion)}</em>` : "."}</td></tr>
+          <tr><td style="font-size:16px;line-height:1.6;color:#5b5348;padding-bottom:28px;">
+            Hi ${escapeHtml(recipientName)}, ${escapeHtml(senderName)} wrote to you a while ago and asked us to hold it until today. It's ready now.
+          </td></tr>
+          <tr><td>
+            <a href="${url}" style="display:inline-block;background:#2b2621;color:#f8f2e8;text-decoration:none;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;padding:14px 28px;border-radius:999px;">Open your letter</a>
+          </td></tr>
+          <tr><td style="font-size:13px;color:#a99a86;padding-top:28px;line-height:1.5;">
+            If the button doesn't work, paste this link into your browser:<br>
+            <a href="${url}" style="color:#8a7d68;">${url}</a>
+          </td></tr>
+        </table>
+        <div style="font-size:12px;color:#b3a68f;padding-top:20px;">Sent by Someday on ${escapeHtml(senderName)}'s behalf.</div>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+
+  return { subject, html, text };
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
+  );
+}
+
+/** Send one already-loaded message and record the result. */
+export async function deliverMessage(
+  msg: ScheduledWithRelations,
+  baseUrl: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!msg.contact) return { ok: false, error: "No recipient set." };
+  const senderName = (await getUserEmail(msg.ownerId)) ?? "Someone";
+  const { subject, html, text } = renderEmail({
+    recipientName: msg.contact.name,
+    senderName,
+    occasion: msg.occasion,
+    url: revealUrl(baseUrl, msg.token),
+  });
+
+  const res = await sendEmail({ to: msg.contact.email, subject, html, text });
+  if (res.ok) {
+    await markSent(msg.id, msg.capsuleId, msg.sendAt ?? new Date());
+    return { ok: true };
+  }
+  await markFailed(msg.id);
+  return { ok: false, error: res.error };
+}
+
+/** Deliver every message that's due. Returns a small summary for logging. */
+export async function deliverDue(baseUrl: string): Promise<{ sent: number; failed: number; total: number }> {
+  const due = await listDueMessages();
+  let sent = 0;
+  let failed = 0;
+  for (const msg of due) {
+    const res = await deliverMessage(msg, baseUrl);
+    if (res.ok) sent++;
+    else failed++;
+  }
+  return { sent, failed, total: due.length };
+}
+
+/**
+ * Send one of your own scheduled messages right now, ignoring its send date —
+ * used by the owner to test the whole flow without waiting. Owner-scoped.
+ */
+export async function deliverNow(
+  id: string,
+  ownerId: string,
+  baseUrl: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const msg = await getScheduled(id, ownerId);
+  if (!msg) return { ok: false, error: "Message not found." };
+  if (!msg.contact) return { ok: false, error: "Choose a recipient first." };
+  if (msg.status === "sent") return { ok: false, error: "Already sent." };
+  if (msg.status === "canceled") return { ok: false, error: "This message was canceled." };
+  // A draft, a scheduled message, or a failed attempt can all be sent right now.
+  return deliverMessage(msg, baseUrl);
+}
