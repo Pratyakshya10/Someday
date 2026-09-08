@@ -14,9 +14,6 @@ const nextConfig: NextConfig = {
   // Prisma's client loads a native query engine at runtime, so it must NOT be
   // bundled — this keeps it as a normal server-side dependency.
   serverExternalPackages: ["@prisma/client", "@supabase/supabase-js"],
-  // Lint runs in dev and via `npm run lint`; don't let it block a deploy build
-  // (the CI installer can skip ESLint's native resolver's install step).
-  eslint: { ignoreDuringBuilds: true },
 };
 
 export default nextConfig;
