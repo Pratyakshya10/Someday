@@ -3,17 +3,29 @@
 // and scopes every change to them.
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import {
   addContact,
   deleteContact,
   createScheduledDraft,
+  setRecipient,
   scheduleMessage,
   unscheduleMessage,
   deleteScheduled,
+  deliverNow,
 } from "@someday/backend";
 import { requireOwnerId } from "@/lib/auth";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+/** The public origin of this request, for building reveal links. */
+async function requestOrigin(): Promise<string> {
+  if (process.env.APP_URL) return process.env.APP_URL;
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
 
 /** Add (or update) a contact. */
 export async function addContactAction(input: {
@@ -40,15 +52,31 @@ export async function deleteContactAction(id: string): Promise<{ ok: boolean }> 
   return { ok };
 }
 
-/** Start a new letter to a contact; returns the new message id to open. */
-export async function createScheduledDraftAction(
-  contactId: string,
-): Promise<{ ok: boolean; id?: string; error?: string }> {
+/** Start a new blank message; returns the new id to open in the composer. */
+export async function createScheduledDraftAction(): Promise<{ ok: boolean; id: string }> {
   const ownerId = await requireOwnerId();
-  const msg = await createScheduledDraft(ownerId, { contactId });
-  if (!msg) return { ok: false, error: "That contact wasn't found." };
+  const msg = await createScheduledDraft(ownerId);
   revalidatePath("/app/scheduled");
   return { ok: true, id: msg.id };
+}
+
+/** Choose the recipient of a draft — an existing contact, or a new name+email. */
+export async function setRecipientAction(
+  id: string,
+  recipient: { contactId: string } | { name: string; email: string },
+): Promise<{ ok: boolean; error?: string }> {
+  const ownerId = await requireOwnerId();
+  if (!("contactId" in recipient)) {
+    const name = recipient.name.trim();
+    const email = recipient.email.trim();
+    if (!name) return { ok: false, error: "Give the recipient a name." };
+    if (!EMAIL_RE.test(email)) return { ok: false, error: "Enter a valid email." };
+    recipient = { name, email };
+  }
+  const res = await setRecipient(id, ownerId, recipient);
+  if (!res) return { ok: false, error: "Couldn't set that recipient." };
+  revalidatePath("/app/scheduled");
+  return { ok: true };
 }
 
 /** Lock in the send date/time; moves the message to `scheduled`. */
@@ -81,4 +109,15 @@ export async function deleteScheduledAction(id: string): Promise<{ ok: boolean }
   const ok = await deleteScheduled(id, ownerId);
   if (ok) revalidatePath("/app/scheduled");
   return { ok };
+}
+
+/**
+ * Send one of your scheduled letters right now, ignoring its date — for testing
+ * the delivery end-to-end. Emails the recipient via Resend.
+ */
+export async function sendNowAction(id: string): Promise<{ ok: boolean; error?: string }> {
+  const ownerId = await requireOwnerId();
+  const res = await deliverNow(id, ownerId, await requestOrigin());
+  if (res.ok) revalidatePath("/app/scheduled");
+  return res;
 }
