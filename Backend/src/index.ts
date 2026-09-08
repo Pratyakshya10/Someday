@@ -74,15 +74,24 @@ export {
 // Scheduled messages — letters addressed to a contact, delivered by email.
 export {
   createScheduledDraft,
+  setRecipient,
   getScheduled,
   getScheduledByCapsule,
+  getScheduledByToken,
   listScheduled,
+  listDueMessages,
   scheduleMessage,
   unscheduleMessage,
   deleteScheduled,
+  markSent,
+  markFailed,
   type ScheduledMessage,
   type ScheduledWithRelations,
 } from "./scheduled";
+
+// Delivery — render + send scheduled messages by email (Resend).
+export { sendEmail, type EmailResult } from "./email";
+export { deliverMessage, deliverDue, deliverNow, revealUrl } from "./delivery";
 
 export {
   MEDIA_BUCKET,
