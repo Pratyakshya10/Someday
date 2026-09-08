@@ -275,9 +275,10 @@ model ScheduledMessage {
   capsuleId String  @unique @map("capsule_id") @db.Uuid
   capsule   Capsule @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
 
-  // Who it's for.
-  contactId String  @map("contact_id") @db.Uuid
-  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  // Who it's for. Null while the letter is still a draft with no recipient
+  // chosen yet; required by the time it's scheduled.
+  contactId String?  @map("contact_id") @db.Uuid
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   // When to send. Null while it's still a draft.
   sendAt DateTime? @map("send_at")
