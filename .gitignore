@@ -1,6 +1,12 @@
 # dependencies (root, Frontend/, Backend/)
 node_modules/
 
+# npm lockfile is intentionally not committed: a lockfile generated on Windows
+# makes npm skip Linux-only native binaries (lightningcss, etc.) on Vercel
+# (npm/cli#4828). Letting each environment resolve fresh avoids that.
+package-lock.json
+**/package-lock.json
+
 # build output
 .next/
 *.tsbuildinfo
