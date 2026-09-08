@@ -18,7 +18,7 @@ export function toScheduledView(s: ScheduledWithRelations): ScheduledView {
     occasion: s.occasion,
     sentAt: s.sentAt ? s.sentAt.toISOString() : null,
     createdAt: s.createdAt.toISOString(),
-    contact: toContactView(s.contact),
+    contact: s.contact ? toContactView(s.contact) : null,
     capsule: toCapsuleView(s.capsule),
   };
 }
