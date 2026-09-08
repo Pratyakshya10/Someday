@@ -8,47 +8,73 @@
 // function is scoped to an `ownerId` — you only ever touch your own rows.
 
 import { db } from "./prisma";
+import { addContact } from "./contacts";
 import type { ScheduledMessage, Capsule, Contact, Recurrence } from "@prisma/client";
 
 export type { ScheduledMessage } from "@prisma/client";
 
 // A scheduled message with the two things a screen always needs alongside it:
-// the capsule that holds its words + media, and the person it's for.
+// the capsule that holds its words + media, and the person it's for (which is
+// null until the writer chooses a recipient).
 export type ScheduledWithRelations = ScheduledMessage & {
   capsule: Capsule;
-  contact: Contact;
+  contact: Contact | null;
 };
 
 /**
- * Start a new scheduled draft: create the backing capsule and the
- * ScheduledMessage that points at it and at the recipient. The contact must
- * belong to the owner. Returns the new row with its capsule + contact.
+ * Start a new message: create the backing capsule and the ScheduledMessage that
+ * points at it. The recipient is chosen later (compose-first flow), so no
+ * contact is needed yet.
  */
 export async function createScheduledDraft(
   ownerId: string,
-  input: { contactId: string; template?: string | null; recipient?: string | null },
-): Promise<ScheduledWithRelations | null> {
-  const contact = await db.contact.findFirst({
-    where: { id: input.contactId, ownerId },
-  });
-  if (!contact) return null;
-
-  // Create the backing capsule first, then the message that links it to the
-  // recipient — one row after the other keeps the types simple.
+  input?: { template?: string | null; recipient?: string | null },
+): Promise<ScheduledWithRelations> {
+  // Create the backing capsule first, then the message that links it — one row
+  // after the other keeps the types simple.
   const capsule = await db.capsule.create({
     data: {
       ownerId,
       type: "solo",
-      template: input.template ?? null,
-      // Default the "To —" line to the recipient's name.
-      recipient: input.recipient ?? contact.name,
+      template: input?.template ?? null,
+      recipient: input?.recipient ?? null,
     },
   });
 
   return db.scheduledMessage.create({
-    data: { ownerId, contactId: contact.id, capsuleId: capsule.id },
+    data: { ownerId, capsuleId: capsule.id },
     include: { capsule: true, contact: true },
   });
+}
+
+/**
+ * Choose (or change) the recipient of a draft. Either points at an existing
+ * saved contact, or creates/updates one from a typed name+email. The contact is
+ * always saved to the owner's address book. Returns the updated message.
+ */
+export async function setRecipient(
+  id: string,
+  ownerId: string,
+  recipient: { contactId: string } | { name: string; email: string },
+): Promise<ScheduledWithRelations | null> {
+  const message = await db.scheduledMessage.findFirst({ where: { id, ownerId } });
+  if (!message || message.status !== "draft") return null;
+
+  let contact: Contact | null;
+  if ("contactId" in recipient) {
+    contact = await db.contact.findFirst({ where: { id: recipient.contactId, ownerId } });
+  } else {
+    contact = await addContact(ownerId, { name: recipient.name, email: recipient.email });
+  }
+  if (!contact) return null;
+
+  await db.scheduledMessage.update({ where: { id }, data: { contactId: contact.id } });
+  // Default the letter's "To —" line to the recipient's name if unset.
+  await db.capsule.updateMany({
+    where: { id: message.capsuleId, recipient: null },
+    data: { recipient: contact.name },
+  });
+  return getScheduled(id, ownerId);
 }
 
 /** One scheduled message you own (with capsule + contact), or null. */
@@ -83,6 +109,53 @@ export function listScheduled(ownerId: string): Promise<ScheduledWithRelations[]
 }
 
 /**
+ * Look a message up by its public reveal token — NOT owner-scoped, because the
+ * recipient who follows the emailed link isn't signed in. The token is the
+ * capability. Only returns a message that has actually been sent (or is due),
+ * so a link can't reveal a letter before its moment.
+ */
+export function getScheduledByToken(token: string): Promise<ScheduledWithRelations | null> {
+  return db.scheduledMessage.findUnique({
+    where: { token },
+    include: { capsule: true, contact: true },
+  });
+}
+
+/** Messages that are due to go out: scheduled, with a send time now or past. */
+export function listDueMessages(now: Date = new Date()): Promise<ScheduledWithRelations[]> {
+  return db.scheduledMessage.findMany({
+    where: { status: "scheduled", sendAt: { lte: now } },
+    include: { capsule: true, contact: true },
+    orderBy: { sendAt: "asc" },
+  });
+}
+
+/**
+ * Mark a message delivered: stamp it sent, backfill its send time if it went
+ * out immediately, and seal the backing capsule so the reveal link opens.
+ */
+export async function markSent(id: string, capsuleId: string, sendAt: Date): Promise<void> {
+  await db.$transaction([
+    db.scheduledMessage.update({
+      where: { id },
+      data: { status: "sent", sentAt: new Date(), sendAt },
+    }),
+    db.capsule.update({
+      where: { id: capsuleId },
+      data: { status: "sealed", sealedAt: new Date(), unlockType: "date", unlockDate: sendAt },
+    }),
+  ]);
+}
+
+/** Mark a delivery attempt failed (so it isn't retried in a tight loop). */
+export function markFailed(id: string): Promise<ScheduledMessage> {
+  return db.scheduledMessage.update({
+    where: { id },
+    data: { status: "failed" },
+  });
+}
+
+/**
  * Lock in a send time. Moves the message to `scheduled` and seals the backing
  * capsule (unlock date = sendAt) so its words can't change after it's set to
  * go out. Only a draft can be scheduled. `sendAt` must be in the future.
@@ -95,6 +168,7 @@ export async function scheduleMessage(
 ): Promise<ScheduledWithRelations | null> {
   const existing = await db.scheduledMessage.findFirst({ where: { id, ownerId } });
   if (!existing || existing.status !== "draft") return null;
+  if (!existing.contactId) return null; // must have a recipient first
   if (sendAt.getTime() <= Date.now()) return null;
 
   await db.$transaction([
