@@ -86,7 +86,7 @@ export interface ScheduledView {
   occasion: string | null;
   sentAt: string | null;
   createdAt: string;
-  contact: ContactView;
+  contact: ContactView | null;
   capsule: CapsuleView;
 }
 
