@@ -121,12 +121,35 @@ export function getScheduledByToken(token: string): Promise<ScheduledWithRelatio
   });
 }
 
-/** Messages that are due to go out: scheduled, with a send time now or past. */
-export function listDueMessages(now: Date = new Date()): Promise<ScheduledWithRelations[]> {
-  return db.scheduledMessage.findMany({
+/** Ids of messages due to go out right now: scheduled, with a send time now
+ *  or past. Just ids — claim each one individually before touching it. */
+export async function listDueMessageIds(now: Date = new Date()): Promise<string[]> {
+  const rows = await db.scheduledMessage.findMany({
     where: { status: "scheduled", sendAt: { lte: now } },
-    include: { capsule: true, contact: true },
+    select: { id: true },
     orderBy: { sendAt: "asc" },
+  });
+  return rows.map((r) => r.id);
+}
+
+/**
+ * Atomically claim one due message for delivery — flips it from `scheduled`
+ * to `sending` only if it's still `scheduled`. If a delivery run is
+ * triggered more than once for the same window (two overlapping cron calls,
+ * an external scheduler firing faster than a run finishes, …), only the
+ * caller that wins this flip gets to send it; everyone else sees count 0 and
+ * moves on. Returns the full row on a win, or null if someone else already
+ * has it (or it's gone).
+ */
+export async function claimDueMessage(id: string): Promise<ScheduledWithRelations | null> {
+  const res = await db.scheduledMessage.updateMany({
+    where: { id, status: "scheduled" },
+    data: { status: "sending" },
+  });
+  if (res.count === 0) return null;
+  return db.scheduledMessage.findUnique({
+    where: { id },
+    include: { capsule: true, contact: true },
   });
 }
 
