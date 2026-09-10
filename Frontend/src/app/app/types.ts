@@ -95,4 +95,8 @@ export interface ScheduledView {
 export interface ChromeApi {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
+  /** Whether the sidebar drawer is open on a small screen (below md). Desktop
+   *  ignores this — the sidebar is always visible there. */
+  mobileOpen: boolean;
+  setMobileOpen: (open: boolean) => void;
 }
