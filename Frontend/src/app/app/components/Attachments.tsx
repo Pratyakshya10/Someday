@@ -187,13 +187,11 @@ function CaptionField({ value, onSave }: { value: string; onSave: (caption: stri
 export function MediaStudio({
   media,
   onRecord,
-  onRemove,
 }: {
   media: Media;
   onRecord: (mode: "voice" | "video") => void;
-  onRemove: (id: string) => void;
 }) {
-  const { items, busy, error, pickFiles } = media;
+  const { busy, error, pickFiles } = media;
 
   const btn =
     "inline-flex items-center gap-2 rounded-full border border-app-border bg-app-surface px-3.5 py-2 text-[12px] text-app-text transition-colors hover:bg-black/[0.04] disabled:opacity-50";
@@ -205,10 +203,11 @@ export function MediaStudio({
         {busy && <span className="text-[11px] text-app-dim">Uploading…</span>}
       </div>
       <p className="mb-3 text-[11px] text-app-faint">
-        Everything drops into the letter right where your cursor is — voice notes from{" "}
+        Voice notes drop into the letter right where your cursor is — from{" "}
         <span className="text-app-dim">Record voice</span> or by pressing{" "}
         <kbd className="rounded border border-app-border px-1">Ctrl</kbd>+
-        <kbd className="rounded border border-app-border px-1">V</kbd> while writing; photos and film wherever you add them.
+        <kbd className="rounded border border-app-border px-1">V</kbd> while writing. Photos and film appear inside the
+        letter, after the words.
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -233,30 +232,32 @@ export function MediaStudio({
       </div>
 
       {error && <p className="mt-3 text-[13px] text-app-accent">{error}</p>}
+    </div>
+  );
+}
 
-      {/* Voice notes live only as their inline chip; photos/films get a caption
-          field here too, since that's awkward to type inside the chip itself. */}
-      {(() => {
-        const visuals = items.filter((a) => a.kind !== "voice");
-        if (visuals.length === 0) return null;
-        return (
-          <div className="mt-4 flex flex-wrap gap-3">
-            {visuals.map((a) => (
-              <div key={a.id} className="group relative w-[132px] shrink-0">
-                <MediaItem a={a} />
-                <CaptionField value={a.caption ?? ""} onSave={(caption) => media.setCaption(a.id, caption)} />
-                <button
-                  onClick={() => onRemove(a.id)}
-                  aria-label="Remove"
-                  className="absolute right-1.5 top-1.5 z-[2] flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-app-text opacity-0 transition-opacity group-hover:opacity-100"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        );
-      })()}
+/** Photos/films attached to a letter, as small cards — always sit at the end
+ *  of the letter's own card (not mid-text, not in the sidebar). Used by the
+ *  composer screens, right below <RichLetter>; voice notes don't appear here
+ *  since they live purely as their inline chip in the text. */
+export function LetterGallery({ media, onRemove }: { media: Media; onRemove: (id: string) => void }) {
+  const visuals = media.items.filter((a) => a.kind !== "voice");
+  if (visuals.length === 0) return null;
+  return (
+    <div className="mt-5 flex flex-wrap gap-3 border-t border-app-border pt-5">
+      {visuals.map((a) => (
+        <div key={a.id} className="group relative w-[132px] shrink-0">
+          <MediaItem a={a} />
+          <CaptionField value={a.caption ?? ""} onSave={(caption) => media.setCaption(a.id, caption)} />
+          <button
+            onClick={() => onRemove(a.id)}
+            aria-label="Remove"
+            className="absolute right-1.5 top-1.5 z-[2] flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-app-text opacity-0 transition-opacity group-hover:opacity-100"
+          >
+            ✕
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
