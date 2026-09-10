@@ -5,6 +5,7 @@
 //   • <MediaGallery> — read-only display, used on the opened letter.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { AttachmentView, AttachmentKind } from "../types";
 import { Icon } from "./ui";
 import { VoicePlayer } from "./VoicePlayer";
@@ -119,23 +120,71 @@ function PolaroidCaption({ caption }: { caption: string | null }) {
   return <p className="mt-2 truncate px-1 text-center font-square-peg text-[16px] leading-none text-app-text">{caption}</p>;
 }
 
+/** Full-size view of a photo, opened by clicking its polaroid. Click anywhere
+ *  (or Escape) to close. */
+function PhotoLightbox({ url, caption, onClose }: { url: string; caption: string | null; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex cursor-zoom-out items-center justify-center bg-black/85 p-6 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-lg text-white transition-colors hover:bg-white/20"
+      >
+        ✕
+      </button>
+      <figure className="flex max-h-full max-w-full flex-col items-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt="" className="max-h-[85vh] max-w-[90vw] rounded-sm object-contain shadow-[0_30px_80px_rgba(0,0,0,0.5)]" />
+        {caption && <figcaption className="font-square-peg text-lg text-white/90">{caption}</figcaption>}
+      </figure>
+    </div>,
+    document.body,
+  );
+}
+
+// A fixed size everywhere it appears — inside the letter, in the reveal
+// gallery — so a photo always reads as the same small keepsake card.
+const POLAROID_WIDTH = "w-[220px]";
+
 /** One media item, read-only. */
 export function MediaItem({ a }: { a: AttachmentView }) {
+  const [expanded, setExpanded] = useState(false);
+
   if (a.kind === "voice") return <VoicePlayer url={a.url} durationSec={a.durationSec} />;
   if (a.kind === "photo")
     return (
-      // Polaroid-style white frame, matching the reveal aesthetic.
-      <div className="rounded-[3px] bg-white p-2 pb-3 shadow-[0_12px_30px_rgba(43,38,33,0.16)]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={a.url} alt="A photograph sealed with this letter" className="block max-h-[280px] w-full rounded-[1px] object-cover" />
-        <PolaroidCaption caption={a.caption} />
-      </div>
+      <>
+        {/* Polaroid-style white frame, matching the reveal aesthetic. Fixed
+            size, click to view full-size. */}
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className={`block ${POLAROID_WIDTH} shrink-0 cursor-zoom-in rounded-[3px] bg-white p-2 pb-3 text-left shadow-[0_12px_30px_rgba(43,38,33,0.16)] transition-transform hover:-translate-y-0.5`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={a.url} alt="A photograph sealed with this letter" className="block h-[180px] w-full rounded-[1px] object-cover" />
+          <PolaroidCaption caption={a.caption} />
+        </button>
+        {expanded && <PhotoLightbox url={a.url} caption={a.caption} onClose={() => setExpanded(false)} />}
+      </>
     );
   return (
     // Polaroid frame + vintage film filter with grain, matching the photo look.
-    <div className="rounded-[3px] bg-white p-2 pb-3 shadow-[0_12px_30px_rgba(43,38,33,0.16)]">
+    <div className={`rounded-[3px] bg-white p-2 pb-3 shadow-[0_12px_30px_rgba(43,38,33,0.16)] ${POLAROID_WIDTH} shrink-0`}>
       <div className="relative overflow-hidden rounded-[1px] bg-black">
-        <video src={a.url} controls className="sd-film block max-h-[300px] w-full" />
+        <video src={a.url} controls className="sd-film block h-[180px] w-full object-cover" />
         <div className="sd-grain" />
       </div>
       <PolaroidCaption caption={a.caption} />
@@ -153,7 +202,7 @@ export function MediaGallery({ items }: { items: AttachmentView[] }) {
         <MediaItem key={a.id} a={a} />
       ))}
       {visuals.length > 0 && (
-        <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))]">
+        <div className="flex flex-wrap gap-3">
           {visuals.map((a) => (
             <MediaItem key={a.id} a={a} />
           ))}
@@ -244,9 +293,9 @@ export function LetterGallery({ media, onRemove }: { media: Media; onRemove: (id
   const visuals = media.items.filter((a) => a.kind !== "voice");
   if (visuals.length === 0) return null;
   return (
-    <div className="mt-5 flex flex-wrap gap-3 border-t border-app-border pt-5">
+    <div className="mt-3 flex flex-wrap gap-3">
       {visuals.map((a) => (
-        <div key={a.id} className="group relative w-[132px] shrink-0">
+        <div key={a.id} className="group relative shrink-0">
           <MediaItem a={a} />
           <CaptionField value={a.caption ?? ""} onSave={(caption) => media.setCaption(a.id, caption)} />
           <button
