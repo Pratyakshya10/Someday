@@ -4,7 +4,7 @@ import Link from "next/link";
 import { saveDraftAction, saveContributionAction } from "../actions";
 import type { CapsuleView, AttachmentView, MemberView, InviteView } from "../types";
 import { PrimaryButton, ScreenFrame } from "../components/ui";
-import { MediaStudio } from "../components/Attachments";
+import { MediaStudio, LetterGallery } from "../components/Attachments";
 import { Recorder } from "../components/Recorder";
 import { RichLetter, type RichLetterHandle } from "../components/RichLetter";
 import { useNoteEditing } from "../components/note";
@@ -119,11 +119,12 @@ export function GroupEditor({
               onAttachFiles={note.onAttachFiles}
               onRemoveAttachment={(id) => void note.media.remove(id)}
             />
+            <LetterGallery media={note.media} onRemove={note.removeAttachment} />
           </div>
         </div>
 
         <div className="flex animate-[sdRise_0.9s_0.1s_both] flex-col gap-[22px] lg:sticky lg:top-[30px]">
-          <MediaStudio media={note.media} onRecord={note.setRecording} onRemove={note.removeAttachment} />
+          <MediaStudio media={note.media} onRecord={note.setRecording} />
 
           {isOwner ? (
             <>
