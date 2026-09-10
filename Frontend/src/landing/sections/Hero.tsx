@@ -21,12 +21,12 @@ export function Hero() {
         <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/45 to-canvas/15" />
 
         {/* script annotations (doodles) */}
-        <span className="float-slow absolute right-6 top-24 hidden -rotate-6 font-script text-2xl text-ink [text-shadow:0_2px_12px_rgba(0,0,0,0.8)] md:block lg:right-16">
+        <span className="float-slow absolute right-6 top-24 hidden -rotate-6 font-square-peg text-2xl text-ink [text-shadow:0_2px_12px_rgba(0,0,0,0.8)] md:block lg:right-16">
           delivered on a date you choose ↝
         </span>
         <span
           style={{ animationDelay: "-3s" }}
-          className="float-slow absolute bottom-24 right-10 hidden rotate-3 font-script text-2xl text-doodle-2 [text-shadow:0_2px_12px_rgba(0,0,0,0.85)] lg:block"
+          className="float-slow absolute bottom-24 right-10 hidden rotate-3 font-square-peg text-2xl text-doodle-2 [text-shadow:0_2px_12px_rgba(0,0,0,0.85)] lg:block"
         >
           kept safe until then ✦
         </span>
@@ -45,7 +45,7 @@ export function Hero() {
             className="max-w-3xl font-serif text-4xl leading-[1.00] text-ink sm:text-6xl md:text-8xl"
           >
             Some things are meant to be{" "}
-            <span className="italic">opened later.</span>
+            <span className="font-square-peg">opened later.</span>
           </h1>
           <div
             data-reveal
