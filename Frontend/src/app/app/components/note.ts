@@ -3,6 +3,11 @@
 // Recorder): media state, the recorder modal's mode, inline voice insertion,
 // and file-drop handling. Both the solo letter and each group note use it; the
 // parent lays out the pieces and owns the body text + autosave.
+//
+// Voice notes drop in as an inline chip right at the cursor — they're spoken
+// asides, so where they land in the text matters. Photos/films are different:
+// they always show as small cards at the end of the letter (LetterGallery),
+// never mid-paragraph, so uploading one never touches the text or the cursor.
 
 import { useState, type RefObject } from "react";
 import type { AttachmentView } from "../types";
@@ -19,7 +24,6 @@ export function useNoteEditing(
 ) {
   const media = useMedia(capsuleId, initialAttachments, (att) => {
     if (att.kind === "voice") letterRef.current?.insertVoice(att);
-    else letterRef.current?.insertMedia(att);
   });
   const [recording, setRecording] = useState<null | "voice" | "video">(null);
 
@@ -36,9 +40,9 @@ export function useNoteEditing(
     }
   };
 
-  // Every attachment now lives inline (its chip is the only place it sits in
-  // the letter), so removing one — from the Studio's list or the chip's own ✕
-  // — always strips the matching token too, no orphans.
+  // A voice chip's own ✕ already removes itself from the text before calling
+  // this; for a photo/film card there's no chip to strip, so this just covers
+  // both — harmless no-op on the DOM side when there's nothing to find.
   const removeAttachment = (id: string) => {
     letterRef.current?.removeChip(id);
     void media.remove(id);
