@@ -232,6 +232,10 @@ model Attachment {
   // Length in seconds for voice / video (null for photos).
   durationSec Int? @map("duration_sec")
 
+  // A short handwritten-style note under a photo/video, e.g. "the last
+  // morning there". Null for voice notes and for media without one.
+  caption String?
+
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([capsuleId])
