@@ -19,6 +19,7 @@ export function useNoteEditing(
 ) {
   const media = useMedia(capsuleId, initialAttachments, (att) => {
     if (att.kind === "voice") letterRef.current?.insertVoice(att);
+    else letterRef.current?.insertMedia(att);
   });
   const [recording, setRecording] = useState<null | "voice" | "video">(null);
 
@@ -35,5 +36,13 @@ export function useNoteEditing(
     }
   };
 
-  return { media, recording, setRecording, onRecorderDone, onAttachFiles };
+  // Every attachment now lives inline (its chip is the only place it sits in
+  // the letter), so removing one — from the Studio's list or the chip's own ✕
+  // — always strips the matching token too, no orphans.
+  const removeAttachment = (id: string) => {
+    letterRef.current?.removeChip(id);
+    void media.remove(id);
+  };
+
+  return { media, recording, setRecording, onRecorderDone, onAttachFiles, removeAttachment };
 }
