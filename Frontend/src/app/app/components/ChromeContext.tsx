@@ -18,6 +18,9 @@ export function ChromeProvider({ children }: { children: ReactNode }) {
   // Start collapsed=false so the server and first client render agree; the
   // stored choice is applied just after mount.
   const [collapsed, setCollapsed] = useState(false);
+  // Below md, the sidebar is an off-canvas drawer — closed by default, and
+  // never persisted (always starts closed on a fresh visit).
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const kick = setTimeout(() => {
@@ -38,6 +41,8 @@ export function ChromeProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("someday.collapsed", c ? "1" : "0");
       } catch {}
     },
+    mobileOpen,
+    setMobileOpen,
   };
 
   return <ChromeContext.Provider value={update}>{children}</ChromeContext.Provider>;
