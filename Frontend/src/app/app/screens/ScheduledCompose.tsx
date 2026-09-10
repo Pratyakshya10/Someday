@@ -165,7 +165,9 @@ export function ScheduledCompose({
 
   // Earliest selectable moment — computed off-render to stay pure.
   useEffect(() => {
-    const t = setTimeout(() => setMinDt(toLocalInput(new Date(Date.now() + 60_000))), 0);
+    // A few minutes of headroom — the picker is minute-grained, so "now" can
+    // round to a value that's already past by the time the request lands.
+    const t = setTimeout(() => setMinDt(toLocalInput(new Date(Date.now() + 5 * 60_000))), 0);
     return () => clearTimeout(t);
   }, []);
 
@@ -357,7 +359,11 @@ export function ScheduledCompose({
                   placeholder="Occasion (e.g. Mom's birthday)"
                   className="w-full rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none placeholder:text-app-faint focus:border-app-dim"
                 />
-                {error && <p className="text-[13px] text-app-accent">{error}</p>}
+                {error && (
+                  <p className="flex items-center gap-1.5 rounded-md border border-app-accent/30 bg-app-accent/10 px-3 py-2 text-[13px] font-medium text-app-accent">
+                    <span aria-hidden>⚠</span> {error}
+                  </p>
+                )}
                 {!message.contact && <p className="text-[12px] text-app-faint">Choose a recipient above to schedule.</p>}
                 <PrimaryButton onClick={schedule} showArrow={!done} className={`w-full justify-center ${done ? "pointer-events-none !bg-app-accent opacity-100" : working || !message.contact ? "pointer-events-none opacity-50" : ""}`}>
                   {done ? "✓ Sent" : working ? "Working…" : "Schedule letter"}
