@@ -53,6 +53,7 @@ export async function toAttachmentView(a: Attachment): Promise<AttachmentView> {
     mimeType: a.mimeType,
     sizeBytes: a.sizeBytes,
     durationSec: a.durationSec,
+    caption: a.caption,
     url: await signedUrl(a.storagePath),
   };
 }
