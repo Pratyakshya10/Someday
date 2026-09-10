@@ -97,10 +97,10 @@ export function Scheduled({
     <ScreenFrame>
       <div className="mx-auto max-w-[920px] animate-[sdRise_0.7s_both]">
         <Kicker>Scheduled messages</Kicker>
-        <h1 className="mb-2 font-serif text-[clamp(24px,3.2vw,40px)] font-medium leading-none tracking-[-0.01em]">
-          Write to someone, <span className="italic">later.</span>
+        <h1 className="mb-2 font-serif text-[clamp(20px,2.4vw,30px)] font-medium leading-none tracking-[-0.01em]">
+          Write to someone, <span className="font-square-peg">later.</span>
         </h1>
-        <p className="mb-7 max-w-[560px] text-sm text-app-dim">
+        <p className="mb-5 max-w-[560px] text-[13px] text-app-dim">
           Write a letter, choose who it&rsquo;s for, and pick the day it should land in their inbox —
           a birthday, an anniversary, a quiet Tuesday. It arrives by email from Someday.
         </p>
@@ -108,13 +108,13 @@ export function Scheduled({
         <button
           onClick={write}
           disabled={pending}
-          className="mb-9 inline-flex items-center gap-2 rounded-full bg-app-accent px-6 py-3 text-[13px] uppercase tracking-[0.16em] text-app-on-accent transition-all hover:-translate-y-0.5 disabled:opacity-50"
+          className="mb-6 inline-flex items-center gap-2 rounded-full bg-app-accent px-5 py-2.5 text-[12px] uppercase tracking-[0.16em] text-app-on-accent transition-all hover:-translate-y-0.5 disabled:opacity-50"
         >
           <span className="text-lg leading-none">✎</span> Write a message
         </button>
 
         {/* scheduled + draft messages */}
-        <div className="mb-10">
+        <div className="mb-7">
           <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-app-faint">Letters in flight</div>
           {flash && <p className="mb-3 text-[13px] text-app-accent">{flash}</p>}
           {messages.length === 0 ? (
