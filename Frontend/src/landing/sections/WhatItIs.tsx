@@ -28,7 +28,7 @@ export function WhatItIs() {
             WHAT IT IS
           </p>
           <h2 className="mt-2 font-serif text-4xl leading-[1.05] text-ink md:text-6xl">
-            A letter you <span className="italic">can&apos;t</span> open yet.
+            A letter you <span className="font-square-peg">can&apos;t</span> open yet.
           </h2>
         </div>
 
@@ -56,7 +56,7 @@ export function WhatItIs() {
                 </span>
               </div>
             </div>
-            <p className="mt-4 font-script text-lg text-doodle">
+            <p className="mt-4 font-square-peg text-lg text-doodle">
               ↖ write it once, seal it for good
             </p>
             {/* Second short film, tilted, filling the space below the note.
@@ -88,7 +88,7 @@ export function WhatItIs() {
                   className="object-cover"
                 />
               </div>
-              <p className="mt-3 text-center font-script text-lg text-paper-ink/80">
+              <p className="mt-3 text-center font-square-peg text-lg text-paper-ink/80">
                 summer, before everything changed
               </p>
             </div>
@@ -101,7 +101,7 @@ export function WhatItIs() {
 
           {/* Column 3 — voice note + film */}
           <div data-reveal style={{ transitionDelay: "360ms" }} className="space-y-5">
-            <p className="-mb-1 -rotate-2 font-script text-lg text-doodle-2">
+            <p className="-mb-1 -rotate-2 font-square-peg text-lg text-doodle-2">
               press play, it&rsquo;s really you ↓
             </p>
             <div className="rounded-lg border border-glass-border bg-glass backdrop-blur-md p-5">
