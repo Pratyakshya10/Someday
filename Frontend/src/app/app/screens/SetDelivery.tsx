@@ -115,8 +115,8 @@ export function SetDelivery({ capsule }: { capsule: CapsuleView }) {
     <ScreenFrame>
       <div className="mx-auto max-w-[960px] animate-[sdRise_0.8s_both]">
         <Kicker>Set delivery</Kicker>
-        <h1 className="mb-2 font-serif text-[clamp(24px,3.2vw,40px)] font-medium leading-none tracking-[-0.01em]">
-          How should it <span className="italic">find you?</span>
+        <h1 className="mb-2 font-serif text-[clamp(20px,2.4vw,30px)] font-medium leading-none tracking-[-0.01em]">
+          How should it <span className="font-square-peg">find you?</span>
         </h1>
         <p className="mb-5 max-w-[520px] text-sm text-app-dim">
           Choose what unlocks this letter — a date, a place you return to, or a moment in your life.
@@ -142,7 +142,7 @@ export function SetDelivery({ capsule }: { capsule: CapsuleView }) {
           {ut === "date" ? (
             <div>
               <Calendar value={date} min={tomorrow} onChange={setDate} label="Delivered on" />
-              <p className="mt-3 max-w-[360px] text-center font-script text-xl text-app-dim">→ {pretty}</p>
+              <p className="mt-3 max-w-[360px] text-center font-square-peg text-xl text-app-text">→ {pretty}</p>
             </div>
           ) : ut === "location" ? (
             <div className="w-full max-w-[380px] rounded-2xl border border-app-border bg-app-panel p-5 backdrop-blur-xl">
@@ -220,9 +220,9 @@ export function SetDelivery({ capsule }: { capsule: CapsuleView }) {
                 <div className="mb-2.5 text-[11px] uppercase tracking-[0.2em] text-app-faint">It will open when</div>
                 <p className="max-w-[300px] font-serif text-[22px] leading-[1.35]">
                   {ut === "location"
-                    ? <>you&rsquo;re within {radiusLabel} of {placeLabel.trim() ? <span className="italic">{placeLabel.trim()}</span> : "this spot"}.</>
+                    ? <>you&rsquo;re within {radiusLabel} of {placeLabel.trim() ? <span className="font-square-peg">{placeLabel.trim()}</span> : "this spot"}.</>
                     : milestone.trim()
-                      ? <span className="italic">{milestone.trim()}.</span>
+                      ? <span className="font-square-peg">{milestone.trim()}.</span>
                       : "the moment you choose."}
                 </p>
               </>
