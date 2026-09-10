@@ -18,6 +18,7 @@ import {
   sealCapsule,
   openByLocation,
   openByMilestone,
+  deleteCapsule,
   getCapsule,
   saveContribution,
   createLinkInvite,
@@ -25,6 +26,7 @@ import {
   revokeInvite,
   setMemberRole,
   removeMember,
+  removeObject,
 } from "@someday/backend";
 import { requireOwnerId, requireUser } from "@/lib/auth";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -195,6 +197,18 @@ export async function sealAction(id: string): Promise<{ ok: boolean }> {
   const sealed = await sealCapsule(id, ownerId);
   if (sealed) revalidatePath("/app/vault");
   return { ok: sealed !== null };
+}
+
+/** Delete a capsule you own, for good — its letter, media, and any scheduled
+ *  message go with it. Best-effort cleanup of the actual storage bytes runs
+ *  after the DB row is gone; a leftover object there is harmless either way. */
+export async function deleteCapsuleAction(id: string): Promise<{ ok: boolean }> {
+  const ownerId = await requireOwnerId();
+  const storagePaths = await deleteCapsule(id, ownerId);
+  if (storagePaths === null) return { ok: false };
+  await Promise.all(storagePaths.map((p) => removeObject(p).catch(() => {})));
+  revalidatePath("/app/vault");
+  return { ok: true };
 }
 
 // ── Group capsules ──────────────────────────────────────────
