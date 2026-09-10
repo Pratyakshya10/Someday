@@ -7,6 +7,9 @@ import { scheduleMessageAction, unscheduleMessageAction, setRecipientAction, sen
 import type { ScheduledView, ContactView, AttachmentView, TemplateKey } from "../types";
 import { PrimaryButton, ScreenFrame } from "../components/ui";
 import { MediaStudio } from "../components/Attachments";
+import { renderLetterBody } from "../components/LetterBody";
+import { Select } from "../components/Select";
+import { DateTimeField } from "../components/DateTimeField";
 import { Recorder } from "../components/Recorder";
 import { RichLetter, type RichLetterHandle } from "../components/RichLetter";
 import { useNoteEditing } from "../components/note";
@@ -87,21 +90,14 @@ function RecipientPicker({
       {!adding && (
         <div className="flex flex-col gap-2">
           {contacts.length > 0 && (
-            <select
+            <Select
               value={contact?.id ?? ""}
-              onChange={(e) => e.target.value && pick(e.target.value)}
+              onChange={(id) => id && pick(id)}
               disabled={working}
-              className="w-full rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:border-app-dim"
-            >
-              <option value="" disabled>
-                {contact ? "Change recipient…" : "Pick a saved contact…"}
-              </option>
-              {contacts.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} · {c.email}
-                </option>
-              ))}
-            </select>
+              placeholder={contact ? "Change recipient…" : "Pick a saved contact…"}
+              className="w-full"
+              options={contacts.map((c) => ({ value: c.id, label: `${c.name} · ${c.email}` }))}
+            />
           )}
           <button
             onClick={() => setAdding(true)}
@@ -158,6 +154,7 @@ export function ScheduledCompose({
   const [occasion, setOccasion] = useState(message.occasion ?? "");
   const [minDt, setMinDt] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
   const [working, startWork] = useTransition();
 
   const letterRef = useRef<RichLetterHandle | null>(null);
@@ -199,7 +196,9 @@ export function ScheduledCompose({
       const iso = new Date(sendAt).toISOString();
       const res = await scheduleMessageAction(message.id, { sendAt: iso, occasion });
       if (!res.ok) return setError(res.error ?? "Couldn't schedule that.");
-      router.push("/app/scheduled");
+      // Confirm on the button itself, then move on to the list.
+      setDone(true);
+      setTimeout(() => router.push("/app/scheduled"), 1100);
     });
 
   const reschedule = () =>
@@ -243,8 +242,15 @@ export function ScheduledCompose({
               <>
                 <h1 className="mb-3 font-serif text-[clamp(20px,2.4vw,30px)] font-medium text-app-text">{title || "Untitled letter"}</h1>
                 <div className="mb-1.5 font-serif text-[clamp(18px,2.4vw,28px)] italic text-app-dim">To — {recipient || recipientName}</div>
-                <div className="mb-5 font-script text-[18px] text-app-dim">the {today}</div>
-                <div className="whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-app-text">{body || "—"}</div>
+                <div className="mb-5 font-square-peg text-[18px] text-app-text">the {today}</div>
+                {(() => {
+                  const { nodes } = renderLetterBody(body, note.media.items);
+                  return nodes.some(Boolean) ? (
+                    <div className="flex flex-col gap-3">{nodes}</div>
+                  ) : (
+                    <div className="text-app-dim">—</div>
+                  );
+                })()}
               </>
             ) : (
               <>
@@ -263,7 +269,7 @@ export function ScheduledCompose({
                     className="min-w-0 flex-1 border-none bg-transparent italic text-app-text outline-none placeholder:text-app-faint"
                   />
                 </div>
-                <div className="mb-5 font-script text-[18px] text-app-dim">the {today}</div>
+                <div className="mb-5 font-square-peg text-[18px] text-app-text">the {today}</div>
 
                 <RichLetter
                   ref={letterRef}
@@ -273,7 +279,7 @@ export function ScheduledCompose({
                   onChange={setBody}
                   onRequestVoice={() => note.setRecording("voice")}
                   onAttachFiles={note.onAttachFiles}
-                  onRemoveVoice={(id) => void note.media.remove(id)}
+                  onRemoveAttachment={(id) => void note.media.remove(id)}
                 />
               </>
             )}
@@ -308,7 +314,7 @@ export function ScheduledCompose({
             <RecipientPicker messageId={message.id} contact={message.contact} contacts={contacts} />
           )}
 
-          {!locked && <MediaStudio media={note.media} onRecord={note.setRecording} onRemove={(id) => void note.media.remove(id)} />}
+          {!locked && <MediaStudio media={note.media} onRecord={note.setRecording} onRemove={note.removeAttachment} />}
 
           {/* deliver-when panel */}
           <div className="rounded-2xl border border-app-border bg-app-panel p-5 backdrop-blur-xl">
@@ -344,13 +350,7 @@ export function ScheduledCompose({
               </>
             ) : (
               <div className="flex flex-col gap-3">
-                <input
-                  type="datetime-local"
-                  value={sendAt}
-                  min={minDt}
-                  onChange={(e) => setSendAt(e.target.value)}
-                  className="w-full rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:border-app-dim"
-                />
+                <DateTimeField value={sendAt} min={minDt} onChange={setSendAt} />
                 <input
                   value={occasion}
                   onChange={(e) => setOccasion(e.target.value)}
@@ -358,17 +358,10 @@ export function ScheduledCompose({
                   className="w-full rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none placeholder:text-app-faint focus:border-app-dim"
                 />
                 {error && <p className="text-[13px] text-app-accent">{error}</p>}
-                {!message.contact && <p className="text-[12px] text-app-faint">Choose a recipient above to schedule or send.</p>}
-                <PrimaryButton onClick={schedule} className={`w-full justify-center ${working || !message.contact ? "pointer-events-none opacity-50" : ""}`}>
-                  {working ? "Working…" : "Schedule letter"}
+                {!message.contact && <p className="text-[12px] text-app-faint">Choose a recipient above to schedule.</p>}
+                <PrimaryButton onClick={schedule} showArrow={!done} className={`w-full justify-center ${done ? "pointer-events-none !bg-app-accent opacity-100" : working || !message.contact ? "pointer-events-none opacity-50" : ""}`}>
+                  {done ? "✓ Sent" : working ? "Working…" : "Schedule letter"}
                 </PrimaryButton>
-                <button
-                  onClick={sendNow}
-                  disabled={working || !message.contact}
-                  className="w-full rounded-full border border-app-accent/30 px-5 py-2.5 text-[12px] uppercase tracking-[0.16em] text-app-accent transition-colors hover:bg-app-accent/10 disabled:opacity-40"
-                >
-                  Send now
-                </button>
               </div>
             )}
           </div>
