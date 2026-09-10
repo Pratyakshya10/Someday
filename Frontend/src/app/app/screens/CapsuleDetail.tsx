@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CapsuleView, AttachmentView, ContributionView } from "../types";
 import { Kicker, Doodle, PrimaryButton, GhostButton, Countdown, ScreenFrame } from "../components/ui";
-import { MediaGallery, MediaItem } from "../components/Attachments";
-import { splitLetter } from "../letter";
+import { MediaGallery } from "../components/Attachments";
+import { renderLetterBody } from "../components/LetterBody";
 import { openByLocationAction, openByMilestoneAction } from "../actions";
 
 function fmtDist(m: number): string {
@@ -28,30 +28,6 @@ function Medallion({ size = 112 }: { size?: number }) {
       </div>
     </div>
   );
-}
-
-/** Render a letter body as text runs with voice notes sitting inline. Returns
- *  the rendered nodes and which attachment ids were consumed inline. */
-function renderLetter(body: string, attachments: AttachmentView[]) {
-  const byShort = new Map(attachments.map((a) => [a.id.slice(0, 8), a]));
-  const usedInline = new Set<string>();
-  const nodes = splitLetter(body).map((seg, i) => {
-    if (seg.type === "text") {
-      const t = seg.text.trim();
-      return t ? (
-        <p key={i} className="whitespace-pre-wrap font-serif text-lg leading-[1.65]">{t}</p>
-      ) : null;
-    }
-    const att = byShort.get(seg.id);
-    if (!att) return null;
-    usedInline.add(att.id);
-    return (
-      <div key={i} className="my-4">
-        <MediaItem a={att} />
-      </div>
-    );
-  });
-  return { nodes, gallery: attachments.filter((a) => !usedInline.has(a.id)) };
 }
 
 function fmt(iso: string | null): string {
@@ -81,8 +57,8 @@ function Waiting({ capsule }: { capsule: CapsuleView }) {
           </div>
         </div>
         <Kicker>Sealed{capsule.sealedAt ? ` ${daysSince(capsule.sealedAt)} days ago` : ""}</Kicker>
-        <h1 className="mb-3 font-serif text-[clamp(24px,3.2vw,40px)] font-medium leading-[1.05]">
-          {capsule.title || "Your letter"} is <span className="italic">still waiting.</span>
+        <h1 className="mb-3 font-serif text-[clamp(20px,2.4vw,30px)] font-medium leading-[1.05]">
+          {capsule.title || "Your letter"} is <span className="font-square-peg">still waiting.</span>
         </h1>
         <p className="mx-auto mb-6 max-w-[420px] text-sm text-app-dim">
           It can&rsquo;t be opened until {fmt(capsule.unlockDate)}. That&rsquo;s the whole point — no peeking.
@@ -118,7 +94,7 @@ function Reveal({ capsule, attachments }: { capsule: CapsuleView; attachments: A
             </div>
           </div>
           <h1 className="mb-3 font-serif text-[clamp(26px,3.4vw,44px)] font-medium">
-            A capsule has <span className="italic">unlocked.</span>
+            A capsule has <span className="font-square-peg">unlocked.</span>
           </h1>
           <p className="mx-auto mb-6 max-w-[400px] text-sm text-app-dim">
             {sealedAgo != null ? `Sealed ${sealedAgo} days ago. ` : ""}Written by you, for today.
@@ -138,10 +114,10 @@ function Reveal({ capsule, attachments }: { capsule: CapsuleView; attachments: A
             To — {capsule.recipient || "Future Me"}
           </div>
           {capsule.sealedAt && (
-            <div className="mb-5 font-script text-[18px] text-app-dim">written {fmt(capsule.sealedAt)}</div>
+            <div className="mb-5 font-square-peg text-[18px] text-app-text">written {fmt(capsule.sealedAt)}</div>
           )}
           {(() => {
-            const { nodes, gallery } = renderLetter(capsule.body ?? "", attachments);
+            const { nodes, gallery } = renderLetterBody(capsule.body ?? "", attachments);
             const hasAnything = nodes.some(Boolean) || gallery.length > 0;
             return (
               <>
@@ -208,8 +184,8 @@ function LocationGate({ capsule }: { capsule: CapsuleView }) {
       <div className="mx-auto flex min-h-[calc(100vh-8vw)] max-w-[560px] flex-col items-center justify-center text-center animate-[sdRise_0.8s_both]">
         <Medallion />
         <Kicker>Sealed to a place</Kicker>
-        <h1 className="mb-3 font-serif text-[clamp(24px,3.2vw,40px)] font-medium leading-[1.05]">
-          Open it {capsule.unlockPlaceLabel?.trim() ? <>at <span className="italic">{capsule.unlockPlaceLabel.trim()}</span></> : "where you left it"}.
+        <h1 className="mb-3 font-serif text-[clamp(20px,2.4vw,30px)] font-medium leading-[1.05]">
+          Open it {capsule.unlockPlaceLabel?.trim() ? <>at <span className="font-square-peg">{capsule.unlockPlaceLabel.trim()}</span></> : "where you left it"}.
         </h1>
         <p className="mx-auto mb-6 max-w-[420px] text-sm text-app-dim">
           This letter unlocks when you&rsquo;re within {radiusLabel(capsule.unlockRadiusM)} of the spot you chose. Be there, then check.
@@ -241,7 +217,7 @@ function MilestoneGate({ capsule }: { capsule: CapsuleView }) {
       <div className="mx-auto flex min-h-[calc(100vh-8vw)] max-w-[560px] flex-col items-center justify-center text-center animate-[sdRise_0.8s_both]">
         <Medallion />
         <Kicker>Sealed to a milestone</Kicker>
-        <h1 className="mb-4 font-serif text-[clamp(24px,3.2vw,40px)] font-medium italic leading-[1.15]">
+        <h1 className="mb-4 font-serif text-[clamp(20px,2.4vw,30px)] font-medium italic leading-[1.15]">
           {capsule.unlockMilestone?.trim() || "When the moment comes."}
         </h1>
         <p className="mx-auto mb-6 max-w-[420px] text-sm text-app-dim">
@@ -265,8 +241,8 @@ function LockedForMember({ capsule }: { capsule: CapsuleView }) {
       <div className="mx-auto flex min-h-[calc(100vh-8vw)] max-w-[560px] flex-col items-center justify-center text-center animate-[sdRise_0.8s_both]">
         <Medallion />
         <Kicker>Sealed together</Kicker>
-        <h1 className="mb-3 font-serif text-[clamp(24px,3.2vw,40px)] font-medium leading-[1.05]">
-          {capsule.title || "This capsule"} is <span className="italic">still sealed.</span>
+        <h1 className="mb-3 font-serif text-[clamp(20px,2.4vw,30px)] font-medium leading-[1.05]">
+          {capsule.title || "This capsule"} is <span className="font-square-peg">still sealed.</span>
         </h1>
         <p className="mx-auto mb-6 max-w-[420px] text-sm text-app-dim">
           {capsule.unlockType === "location"
@@ -297,7 +273,7 @@ function GroupReveal({ capsule, contributions }: { capsule: CapsuleView; contrib
         ) : (
           <div className="flex flex-col gap-5">
             {withContent.map((c) => {
-              const { nodes, gallery } = renderLetter(c.body, c.attachments);
+              const { nodes, gallery } = renderLetterBody(c.body, c.attachments);
               return (
                 <div key={c.authorId} className="rounded-[10px] border border-app-border bg-app-surface p-[clamp(18px,3vw,32px)] shadow-[0_18px_50px_rgba(43,38,33,0.1)] backdrop-blur-xl">
                   <div className="mb-3 text-[11px] uppercase tracking-[0.18em] text-app-faint">
