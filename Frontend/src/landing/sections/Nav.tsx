@@ -4,7 +4,7 @@ export function Nav() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-gradient-to-b from-canvas via-canvas/80 to-transparent backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 md:px-10">
-        <a href="#hero" className="font-serif text-2xl italic text-ink">
+        <a href="#hero" className="font-logo text-3xl text-ink">
           Someday
         </a>
         <nav className="flex items-center gap-6 text-[11px] tracking-[0.2em] text-ink/70 md:gap-8">
