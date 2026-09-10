@@ -14,7 +14,7 @@ function Shell({ children }: { children: ReactNode }) {
   // Sign-in is shown before there's a session, so it stands alone — no sidebar.
   const bare = pathname === "/app/signin";
   return (
-    <div className="app-gradient relative min-h-screen font-sans text-app-text">
+    <div className={`app-gradient relative font-sans text-app-text ${bare ? "min-h-screen" : "h-screen overflow-hidden"}`}>
       <Grain />
       {!bare && <Sidebar />}
       {children}
