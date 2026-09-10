@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer className="bg-surface px-6 py-10 md:px-10">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-6 md:flex-row md:justify-between">
-        <a href="#hero" className="font-serif text-xl italic text-ink">
+        <a href="#hero" className="font-logo text-2xl text-ink">
           Someday
         </a>
         <nav className="flex gap-8 text-[11px] tracking-[0.2em] text-ink/60">
