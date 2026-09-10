@@ -32,6 +32,7 @@ export interface Media {
   upload: (file: File, kind: AttachmentKind, durationSec: number | null) => Promise<AttachmentView | null>;
   pickFiles: (files: FileList | null, kind: AttachmentKind) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  setCaption: (id: string, caption: string) => Promise<void>;
 }
 
 /** All the upload/delete plumbing for one capsule's media. `onUploaded` fires
@@ -96,7 +97,26 @@ export function useMedia(
     }
   }, []);
 
-  return { items, busy, error, upload, pickFiles, remove };
+  const setCaption = useCallback(async (id: string, caption: string) => {
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, caption: caption || null } : i))); // optimistic
+    try {
+      await fetch(`/api/media/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caption }),
+      });
+    } catch {
+      // Local state already shows it; a reload would restore the saved value.
+    }
+  }, []);
+
+  return { items, busy, error, upload, pickFiles, remove, setCaption };
+}
+
+/** The handwritten caption under a polaroid, if it has one. */
+function PolaroidCaption({ caption }: { caption: string | null }) {
+  if (!caption) return null;
+  return <p className="mt-2 truncate px-1 text-center font-square-peg text-[16px] leading-none text-app-text">{caption}</p>;
 }
 
 /** One media item, read-only. */
@@ -108,6 +128,7 @@ export function MediaItem({ a }: { a: AttachmentView }) {
       <div className="rounded-[3px] bg-white p-2 pb-3 shadow-[0_12px_30px_rgba(43,38,33,0.16)]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={a.url} alt="A photograph sealed with this letter" className="block max-h-[280px] w-full rounded-[1px] object-cover" />
+        <PolaroidCaption caption={a.caption} />
       </div>
     );
   return (
@@ -117,6 +138,7 @@ export function MediaItem({ a }: { a: AttachmentView }) {
         <video src={a.url} controls className="sd-film block max-h-[300px] w-full" />
         <div className="sd-grain" />
       </div>
+      <PolaroidCaption caption={a.caption} />
     </div>
   );
 }
@@ -138,6 +160,26 @@ export function MediaGallery({ items }: { items: AttachmentView[] }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** A small caption input for one photo/video, saved on blur. */
+function CaptionField({ value, onSave }: { value: string; onSave: (caption: string) => void }) {
+  // Uncontrolled-ish: seeded from `value` once. The only writer of `value` is
+  // this same field's own save, echoed straight back — so there's no external
+  // update to resync with, and no effect is needed.
+  const [text, setText] = useState(value);
+  return (
+    <input
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => {
+        if (text.trim() !== value) onSave(text.trim());
+      }}
+      placeholder="Add a caption…"
+      maxLength={140}
+      className="mt-1.5 w-full rounded-md border border-app-border bg-app-surface px-2.5 py-1.5 text-[13px] text-app-text outline-none placeholder:text-app-faint focus:border-app-dim"
+    />
   );
 }
 
@@ -163,10 +205,10 @@ export function MediaStudio({
         {busy && <span className="text-[11px] text-app-dim">Uploading…</span>}
       </div>
       <p className="mb-3 text-[11px] text-app-faint">
-        Voice notes drop into the letter where your cursor is — from{" "}
+        Everything drops into the letter right where your cursor is — voice notes from{" "}
         <span className="text-app-dim">Record voice</span> or by pressing{" "}
         <kbd className="rounded border border-app-border px-1">Ctrl</kbd>+
-        <kbd className="rounded border border-app-border px-1">V</kbd> while writing.
+        <kbd className="rounded border border-app-border px-1">V</kbd> while writing; photos and film wherever you add them.
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -192,7 +234,8 @@ export function MediaStudio({
 
       {error && <p className="mt-3 text-[13px] text-app-accent">{error}</p>}
 
-      {/* Voice notes live inline in the letter; the studio lists photos & films. */}
+      {/* Voice notes live only as their inline chip; photos/films get a caption
+          field here too, since that's awkward to type inside the chip itself. */}
       {(() => {
         const visuals = items.filter((a) => a.kind !== "voice");
         if (visuals.length === 0) return null;
@@ -201,6 +244,7 @@ export function MediaStudio({
             {visuals.map((a) => (
               <div key={a.id} className="group relative">
                 <MediaItem a={a} />
+                <CaptionField value={a.caption ?? ""} onSave={(caption) => media.setCaption(a.id, caption)} />
                 <button
                   onClick={() => onRemove(a.id)}
                   aria-label="Remove"
