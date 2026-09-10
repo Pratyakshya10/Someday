@@ -505,7 +505,7 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
         onDrop={onDrop}
         onDragOver={onDragOver}
         onClick={onClick}
-        className="sd-letter min-h-[220px] w-full whitespace-pre-wrap text-lg leading-[1.65] text-app-text outline-none"
+        className="sd-letter min-h-[48px] w-full whitespace-pre-wrap text-lg leading-[1.65] text-app-text outline-none"
       />
     </div>
   );
