@@ -253,10 +253,14 @@ export function MediaStudio({
       </div>
       <p className="mb-3 text-[11px] text-app-faint">
         Voice notes drop into the letter right where your cursor is — from{" "}
-        <span className="text-app-dim">Record voice</span> or by pressing{" "}
-        <kbd className="rounded border border-app-border px-1">Ctrl</kbd>+
-        <kbd className="rounded border border-app-border px-1">V</kbd> while writing. Photos and film appear inside the
-        letter, after the words.
+        <span className="text-app-dim">Record voice</span>
+        {/* Ctrl+V only makes sense with a physical keyboard — hidden on phones. */}
+        <span className="hidden sm:inline">
+          {" "}or by pressing{" "}
+          <kbd className="rounded border border-app-border px-1">Ctrl</kbd>+
+          <kbd className="rounded border border-app-border px-1">V</kbd> while writing
+        </span>
+        . Photos and film appear inside the letter, after the words.
       </p>
 
       <div className="flex flex-wrap gap-2">
