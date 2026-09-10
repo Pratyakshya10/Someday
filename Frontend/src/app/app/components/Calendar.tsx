@@ -54,7 +54,10 @@ export function Calendar({
   ];
 
   return (
-    <div className="w-full max-w-[360px] rounded-2xl border border-app-border bg-app-panel p-5 backdrop-blur-xl">
+    // A fixed width (not just a max-width) — otherwise a wider month name
+    // like "September" vs. "May" makes the whole box grow/shrink with it.
+    // max-w-full is just a mobile safety net so it still fits a narrow screen.
+    <div className="w-[320px] max-w-full rounded-2xl border border-app-border bg-app-panel p-5 backdrop-blur-xl">
       <div className="mb-4 text-[11px] uppercase tracking-[0.22em] text-app-faint">{label}</div>
 
       <div className="mb-4 flex items-center justify-between">
