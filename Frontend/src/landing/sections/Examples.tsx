@@ -36,14 +36,14 @@ export function Examples() {
           className="mt-4 flex flex-col justify-between gap-4 md:flex-row md:items-end"
         >
           <h2 className="font-serif text-4xl leading-tight text-ink md:text-6xl">
-            Waiting to be <span className="italic">opened.</span>
+            Waiting to be <span className="font-square-peg">opened.</span>
           </h2>
           <div className="max-w-sm">
             <p className="text-sm text-ink/75">
               Each one stays locked until the date its author chose. This is all
               you see until then.
             </p>
-            <p className="mt-2 -rotate-1 font-script text-lg text-doodle">
+            <p className="mt-2 -rotate-1 font-square-peg text-lg text-doodle">
               no peeking till it&rsquo;s time ✦
             </p>
           </div>
