@@ -141,12 +141,16 @@ export function Vignette() {
   );
 }
 
-/** The scrolling area to the right of the fixed sidebar. */
+/** The scrolling area beside the sidebar — full width below md (the sidebar
+ *  is an off-canvas drawer there), offset by its column at md and up. Top
+ *  padding always clears the mobile hamburger button, even with pad={false}. */
 export function ScreenFrame({ children, pad = true }: { children: ReactNode; pad?: boolean }) {
   const { collapsed } = useChrome();
   return (
     <main
-      className={`relative z-[2] h-screen overflow-y-auto text-app-text transition-[margin] duration-300 ${collapsed ? "ml-[76px]" : "ml-[248px]"} ${pad ? "p-[clamp(14px,2.2vw,28px)]" : ""}`}
+      className={`relative z-[2] ml-0 h-screen overflow-y-auto text-app-text transition-[margin] duration-300 ${
+        collapsed ? "md:ml-[76px]" : "md:ml-[248px]"
+      } pt-16 md:pt-[clamp(14px,2.2vw,28px)] ${pad ? "px-[clamp(14px,2.2vw,28px)] pb-[clamp(14px,2.2vw,28px)]" : ""}`}
     >
       {children}
     </main>
