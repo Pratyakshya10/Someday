@@ -43,8 +43,11 @@ export function Select({
     const menuH = Math.min(280, options.length * 40 + 12);
     const spaceBelow = window.innerHeight - r.bottom;
     const openUp = spaceBelow < menuH + 12 && r.top > spaceBelow;
+    // Clamp so the menu never runs off the right edge on a narrow screen,
+    // even if the trigger itself sits close to it.
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - r.width - 8));
     setCoords({
-      left: r.left,
+      left,
       width: r.width,
       top: openUp ? Math.max(8, r.top - menuH - 6) : r.bottom + 6,
     });
