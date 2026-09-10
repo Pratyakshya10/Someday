@@ -83,9 +83,7 @@ export function renderLetterBody(rawBody: string, attachments: AttachmentView[])
       nodes.push(
         <div key={`g${key++}`} className="my-2 flex flex-wrap justify-center gap-4 sm:justify-start">
           {group.map((att) => (
-            <div key={att.id} className="w-full max-w-[260px]">
-              <MediaItem a={att} />
-            </div>
+            <MediaItem key={att.id} a={att} />
           ))}
         </div>,
       );
