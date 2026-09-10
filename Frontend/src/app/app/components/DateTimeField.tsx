@@ -46,18 +46,21 @@ export function DateTimeField({
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => selected ?? minDate ?? new Date());
   const btnRef = useRef<HTMLButtonElement>(null);
-  const [coords, setCoords] = useState<{ left: number; top: number } | null>(null);
+  const [coords, setCoords] = useState<{ left: number; top: number; width: number } | null>(null);
 
   const place = () => {
     const el = btnRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const w = 320;
+    // Shrink to fit narrow screens (with 12px margin either side) instead of
+    // running off the edge or leaving almost no breathing room.
+    const w = Math.min(320, window.innerWidth - 24);
     const menuH = 380;
     const openUp = window.innerHeight - r.bottom < menuH + 12 && r.top > menuH;
     setCoords({
       left: Math.max(12, Math.min(r.left, window.innerWidth - w - 12)),
       top: openUp ? Math.max(8, r.top - menuH - 6) : r.bottom + 6,
+      width: w,
     });
   };
 
@@ -146,7 +149,7 @@ export function DateTimeField({
           <>
             <div className="fixed inset-0 z-[60]" onMouseDown={() => setOpen(false)} />
             <div
-              style={{ position: "fixed", left: coords.left, top: coords.top, width: 320 }}
+              style={{ position: "fixed", left: coords.left, top: coords.top, width: coords.width }}
               className="z-[61] rounded-2xl border border-app-border bg-app-panel p-4 shadow-[0_24px_60px_rgba(43,38,33,0.2)] backdrop-blur-xl"
             >
               {/* month header */}
