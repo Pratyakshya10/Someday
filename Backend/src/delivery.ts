@@ -31,12 +31,29 @@ function renderEmail(input: {
 
   const html = `<!doctype html>
 <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--[if !mso]><!-->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Square+Peg&display=swap">
+    <!--<![endif]-->
+    <style>
+      /* Web fonts render where the client allows them (most non-Outlook
+         clients); everywhere else this falls back to the cursive/serif
+         stack below, so the email still reads fine either way. */
+      .sd-headline { font-family: 'Square Peg', 'Segoe Script', 'Bradley Hand', cursive, Georgia, serif; }
+      @media (max-width: 480px) {
+        .sd-card { padding: 28px 20px !important; }
+        .sd-headline { font-size: 24px !important; }
+      }
+    </style>
+  </head>
   <body style="margin:0;background:#f7ecde;font-family:Georgia,'Times New Roman',serif;color:#2b2621;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
       <tr><td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#fffaf3;border:1px solid #e7dccb;border-radius:16px;padding:40px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="sd-card" style="max-width:520px;background:#fffaf3;border:1px solid #e7dccb;border-radius:16px;padding:40px;">
           <tr><td style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:#a99a86;padding-bottom:20px;">Someday</td></tr>
-          <tr><td style="font-size:26px;line-height:1.25;padding-bottom:16px;">A letter was kept for you${occasion ? `,<br><em>${escapeHtml(occasion)}</em>` : "."}</td></tr>
+          <tr><td class="sd-headline" style="font-size:28px;line-height:1.3;padding-bottom:16px;">A letter was kept for you${occasion ? `,<br><em>${escapeHtml(occasion)}</em>` : "."}</td></tr>
           <tr><td style="font-size:16px;line-height:1.6;color:#5b5348;padding-bottom:28px;">
             Hi ${escapeHtml(recipientName)}, ${escapeHtml(senderName)} wrote to you a while ago and asked us to hold it until today. It's ready now.
           </td></tr>
