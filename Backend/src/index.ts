@@ -32,6 +32,7 @@ export {
   listCapsuleAttachments,
   getAttachment,
   deleteAttachment,
+  setAttachmentCaption,
   type Attachment,
   type NewAttachment,
 } from "./attachments";
