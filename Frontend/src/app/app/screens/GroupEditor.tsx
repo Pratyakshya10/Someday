@@ -107,7 +107,7 @@ export function GroupEditor({
                 {capsule.recipient && <div className="mb-1.5 font-serif text-[clamp(18px,2.4vw,26px)] italic text-app-dim">To — {capsule.recipient}</div>}
               </>
             )}
-            <div className="mb-5 font-script text-[18px] text-app-dim">your note · the {today}</div>
+            <div className="mb-5 font-square-peg text-[18px] text-app-text">your note · the {today}</div>
 
             <RichLetter
               ref={letterRef}
@@ -117,13 +117,13 @@ export function GroupEditor({
               onChange={setBody}
               onRequestVoice={() => note.setRecording("voice")}
               onAttachFiles={note.onAttachFiles}
-              onRemoveVoice={(id) => void note.media.remove(id)}
+              onRemoveAttachment={(id) => void note.media.remove(id)}
             />
           </div>
         </div>
 
         <div className="flex animate-[sdRise_0.9s_0.1s_both] flex-col gap-[22px] lg:sticky lg:top-[30px]">
-          <MediaStudio media={note.media} onRecord={note.setRecording} onRemove={(id) => void note.media.remove(id)} />
+          <MediaStudio media={note.media} onRecord={note.setRecording} onRemove={note.removeAttachment} />
 
           {isOwner ? (
             <>
