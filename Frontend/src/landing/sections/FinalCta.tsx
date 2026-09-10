@@ -27,11 +27,11 @@ export function FinalCta() {
           style={{ transitionDelay: "130ms" }}
           className="mt-6 font-serif text-5xl leading-[0.98] text-ink md:text-8xl"
         >
-          Someday <span className="italic">is</span> a date.
+          Someday <span className="font-square-peg">is</span> a date.
         </h2>
         <p
           style={{ animationDelay: "-1.5s" }}
-          className="float-slow mt-4 rotate-1 font-script text-2xl text-doodle-2"
+          className="float-slow mt-4 rotate-1 font-square-peg text-2xl text-doodle-2"
         >
           take your time ~
         </p>
