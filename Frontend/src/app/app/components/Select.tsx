@@ -33,6 +33,7 @@ export function Select({
 }) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ left: number; top: number; width: number } | null>(null);
   const current = options.find((o) => o.value === value);
 
@@ -63,13 +64,21 @@ export function Select({
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
+    // Scrolling the menu's own option list also dispatches a (bubbling)
+    // scroll event — ignore those, or the list would close itself the
+    // instant you tried to scroll it. Only an outside scroll (the page
+    // moving under the menu) should dismiss it.
+    const onScroll = (e: Event) => {
+      if (menuRef.current && e.target instanceof Node && menuRef.current.contains(e.target)) return;
+      close();
+    };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("resize", close);
-    window.addEventListener("scroll", close, true);
+    window.addEventListener("scroll", onScroll, true);
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("resize", close);
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("keydown", onKey);
     };
   }, [open]);
@@ -96,6 +105,7 @@ export function Select({
           <>
             <div className="fixed inset-0 z-[60]" onMouseDown={() => setOpen(false)} />
             <div
+              ref={menuRef}
               style={{ position: "fixed", left: coords.left, top: coords.top, width: coords.width, maxHeight: 280 }}
               className="z-[61] overflow-y-auto rounded-xl border border-app-border bg-app-panel p-1.5 shadow-[0_20px_50px_rgba(43,38,33,0.18)] backdrop-blur-xl"
             >
