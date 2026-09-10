@@ -17,8 +17,8 @@ export function NewCapsule({ initialType = "solo" }: { initialType?: CapsuleType
     <ScreenFrame>
       <div className="mx-auto max-w-[1040px] animate-[sdRise_0.8s_both]">
         <Kicker>New capsule</Kicker>
-        <h1 className="mb-2 font-serif text-[clamp(24px,3.2vw,40px)] font-medium leading-none tracking-[-0.01em]">
-          What are we <span className="italic">sealing?</span>
+        <h1 className="mb-2 font-serif text-[clamp(20px,2.4vw,30px)] font-medium leading-none tracking-[-0.01em]">
+          What are we <span className="font-square-peg">sealing?</span>
         </h1>
         <p className="mb-6 max-w-[520px] text-sm text-app-dim">
           {group
