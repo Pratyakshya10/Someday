@@ -240,15 +240,15 @@ export function MediaStudio({
         const visuals = items.filter((a) => a.kind !== "voice");
         if (visuals.length === 0) return null;
         return (
-          <div className="mt-4 flex flex-col gap-3">
+          <div className="mt-4 flex flex-wrap gap-3">
             {visuals.map((a) => (
-              <div key={a.id} className="group relative">
+              <div key={a.id} className="group relative w-[132px] shrink-0">
                 <MediaItem a={a} />
                 <CaptionField value={a.caption ?? ""} onSave={(caption) => media.setCaption(a.id, caption)} />
                 <button
                   onClick={() => onRemove(a.id)}
                   aria-label="Remove"
-                  className="absolute right-2 top-2 z-[2] flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-app-text opacity-0 transition-opacity group-hover:opacity-100"
+                  className="absolute right-1.5 top-1.5 z-[2] flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-app-text opacity-0 transition-opacity group-hover:opacity-100"
                 >
                   ✕
                 </button>
