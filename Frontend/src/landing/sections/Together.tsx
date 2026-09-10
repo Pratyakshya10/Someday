@@ -19,18 +19,18 @@ export function Together() {
       <div className="absolute inset-0 bg-canvas/60" />
 
       {/* script annotations */}
-      <span className="float-slow absolute right-[16%] top-[24%] hidden rotate-3 font-script text-xl text-doodle md:block">
+      <span className="float-slow absolute right-[16%] top-[24%] hidden rotate-3 font-square-peg text-xl text-doodle md:block">
         ↝ everyone drops in a note
       </span>
       <span
         style={{ animationDelay: "-2s" }}
-        className="float-slow absolute right-[10%] top-[46%] hidden -rotate-2 font-script text-xl text-doodle-2 md:block"
+        className="float-slow absolute right-[10%] top-[46%] hidden -rotate-2 font-square-peg text-xl text-doodle-2 md:block"
       >
         voice memos from the whole crew ↓
       </span>
       <span
         style={{ animationDelay: "-4s" }}
-        className="float-slow absolute right-[20%] top-[64%] hidden rotate-2 font-script text-xl text-accent md:block"
+        className="float-slow absolute right-[20%] top-[64%] hidden rotate-2 font-square-peg text-xl text-accent md:block"
       >
         it opens for all of you at once ✳
       </span>
@@ -48,7 +48,7 @@ export function Together() {
           style={{ transitionDelay: "130ms" }}
           className="mt-5 font-serif text-4xl leading-[0.98] text-ink md:text-7xl"
         >
-          Some memories belong to <span className="italic">everyone.</span>
+          Some memories belong to <span className="font-square-peg">everyone.</span>
         </h2>
         <p
           data-reveal
