@@ -6,7 +6,7 @@ import { saveDraftAction } from "../actions";
 import { scheduleMessageAction, unscheduleMessageAction, setRecipientAction, sendNowAction } from "../scheduled/actions";
 import type { ScheduledView, ContactView, AttachmentView, TemplateKey } from "../types";
 import { PrimaryButton, ScreenFrame } from "../components/ui";
-import { MediaStudio } from "../components/Attachments";
+import { MediaStudio, LetterGallery, MediaGallery } from "../components/Attachments";
 import { renderLetterBody } from "../components/LetterBody";
 import { Select } from "../components/Select";
 import { DateTimeField } from "../components/DateTimeField";
@@ -246,9 +246,13 @@ export function ScheduledCompose({
                 <div className="mb-1.5 font-serif text-[clamp(18px,2.4vw,28px)] italic text-app-dim">To — {recipient || recipientName}</div>
                 <div className="mb-5 font-square-peg text-[18px] text-app-text">the {today}</div>
                 {(() => {
-                  const { nodes } = renderLetterBody(body, note.media.items);
-                  return nodes.some(Boolean) ? (
-                    <div className="flex flex-col gap-3">{nodes}</div>
+                  const { nodes, gallery } = renderLetterBody(body, note.media.items);
+                  const hasAnything = nodes.some(Boolean) || gallery.length > 0;
+                  return hasAnything ? (
+                    <>
+                      <div className="flex flex-col gap-3">{nodes}</div>
+                      <MediaGallery items={gallery} />
+                    </>
                   ) : (
                     <div className="text-app-dim">—</div>
                   );
@@ -283,6 +287,7 @@ export function ScheduledCompose({
                   onAttachFiles={note.onAttachFiles}
                   onRemoveAttachment={(id) => void note.media.remove(id)}
                 />
+                <LetterGallery media={note.media} onRemove={note.removeAttachment} />
               </>
             )}
           </div>
@@ -316,7 +321,7 @@ export function ScheduledCompose({
             <RecipientPicker messageId={message.id} contact={message.contact} contacts={contacts} />
           )}
 
-          {!locked && <MediaStudio media={note.media} onRecord={note.setRecording} onRemove={note.removeAttachment} />}
+          {!locked && <MediaStudio media={note.media} onRecord={note.setRecording} />}
 
           {/* deliver-when panel */}
           <div className="rounded-2xl border border-app-border bg-app-panel p-5 backdrop-blur-xl">
