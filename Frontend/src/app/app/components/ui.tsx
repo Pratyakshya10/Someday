@@ -26,17 +26,17 @@ export function Kicker({ children }: { children: ReactNode }) {
 
 /** Handwritten caption. */
 export function Doodle({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <span className={`font-script text-[21px] leading-[1.05] text-app-dim ${className}`}>{children}</span>;
+  return <span className={`font-square-peg text-[21px] leading-[1.05] text-app-text ${className}`}>{children}</span>;
 }
 
-export function PrimaryButton({ children, onClick, className = "" }: { children: ReactNode; onClick?: () => void; className?: string }) {
+export function PrimaryButton({ children, onClick, className = "", showArrow = true }: { children: ReactNode; onClick?: () => void; className?: string; showArrow?: boolean }) {
   return (
     <button
       onClick={onClick}
       className={`group inline-flex items-center gap-2 rounded-full bg-app-accent px-[26px] py-[11px] text-[12px] uppercase tracking-[0.16em] text-app-on-accent shadow-[0_10px_30px_rgba(43,38,33,0.2)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(43,38,33,0.28)] ${className}`}
     >
       {children}
-      <span className="text-base transition-transform duration-300 group-hover:translate-x-1">→</span>
+      {showArrow && <span className="text-base transition-transform duration-300 group-hover:translate-x-1">→</span>}
     </button>
   );
 }
@@ -105,7 +105,7 @@ export function Countdown({ days, gap = "gap-3.5" }: { days: number; gap?: strin
     <div className={`flex ${gap}`}>
       {blocks.map(([val, label]) => (
         <div key={label} className="text-center">
-          <div className="min-w-[42px] font-serif text-[clamp(22px,3vw,34px)] font-semibold leading-none text-app-text">
+          <div className="min-w-[34px] font-serif text-[clamp(18px,2.4vw,27px)] font-semibold leading-none text-app-text">
             {String(val).padStart(2, "0")}
           </div>
           <div className="mt-1 text-[9.5px] uppercase tracking-[0.2em] text-app-faint">{label}</div>
@@ -146,7 +146,7 @@ export function ScreenFrame({ children, pad = true }: { children: ReactNode; pad
   const { collapsed } = useChrome();
   return (
     <main
-      className={`relative z-[2] min-h-screen text-app-text transition-[margin] duration-300 ${collapsed ? "ml-[76px]" : "ml-[248px]"} ${pad ? "p-[clamp(16px,3vw,40px)]" : ""}`}
+      className={`relative z-[2] h-screen overflow-y-auto text-app-text transition-[margin] duration-300 ${collapsed ? "ml-[76px]" : "ml-[248px]"} ${pad ? "p-[clamp(14px,2.2vw,28px)]" : ""}`}
     >
       {children}
     </main>
