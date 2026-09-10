@@ -57,6 +57,7 @@ enum MemberRole {
 enum ScheduledStatus {
   draft     // still being written
   scheduled // locked in with a send time
+  sending   // claimed by a delivery run, in flight — see claimDueMessage()
   sent
   failed
   canceled
