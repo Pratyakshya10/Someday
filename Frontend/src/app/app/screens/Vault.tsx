@@ -1,8 +1,11 @@
 "use client";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { CapsuleView } from "../types";
 import { Kicker, PrimaryButton, GhostButton, Icon, ScreenFrame } from "../components/ui";
 import { stripVoiceTokens } from "../letter";
+import { deleteCapsuleAction } from "../actions";
 
 function statusOf(c: CapsuleView): "draft" | "locked" | "open" {
   if (c.status === "draft") return "draft";
@@ -75,6 +78,21 @@ function statusLabel(c: CapsuleView): string {
 }
 
 export function Vault({ capsules }: { capsules: CapsuleView[] }) {
+  const router = useRouter();
+  const [, startDelete] = useTransition();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = (e: React.MouseEvent, c: CapsuleView) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`Delete "${c.title || "this capsule"}" for good? This can't be undone.`)) return;
+    setDeletingId(c.id);
+    startDelete(async () => {
+      await deleteCapsuleAction(c.id);
+      router.refresh();
+    });
+  };
+
   if (capsules.length === 0) {
     return (
       <ScreenFrame>
@@ -283,6 +301,15 @@ export function Vault({ capsules }: { capsules: CapsuleView[] }) {
                       Group
                     </span>
                   )}
+                  <button
+                    onClick={(e) => handleDelete(e, c)}
+                    disabled={deletingId === c.id}
+                    aria-label="Delete capsule"
+                    title="Delete capsule"
+                    className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-colors hover:bg-black/60 disabled:opacity-60"
+                  >
+                    <Icon d="M4 7h16M9 7V4h6v3M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M10 11v6M14 11v6" className="h-3 w-3" />
+                  </button>
                 </div>
                 <div className="p-2">
                   <div className="truncate font-serif text-[13px] font-medium leading-tight">{c.title || "Untitled capsule"}</div>
