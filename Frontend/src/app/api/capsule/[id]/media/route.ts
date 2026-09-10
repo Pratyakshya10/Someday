@@ -86,6 +86,7 @@ export async function POST(req: Request, { params }: RouteContext<"/api/capsule/
       mimeType: row.mimeType,
       sizeBytes: row.sizeBytes,
       durationSec: row.durationSec,
+      caption: row.caption,
       url: await signedUrl(path),
     },
   });
