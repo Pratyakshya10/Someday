@@ -279,3 +279,18 @@ export async function openByMilestone(id: string, ownerId: string): Promise<Caps
   if (capsule.status !== "sealed" || capsule.unlockType !== "milestone") return capsule;
   return markUnlocked(id, ownerId);
 }
+
+/**
+ * Delete a capsule you own, for good — its letter, media rows, members,
+ * invites, and any scheduled message all cascade away with it at the DB
+ * level. Returns the storage paths of its attachments (still yours to clean
+ * up from the bucket — this layer only owns the database), or null if there
+ * was no such capsule of yours to delete.
+ */
+export async function deleteCapsule(id: string, ownerId: string): Promise<string[] | null> {
+  const capsule = await db.capsule.findFirst({ where: { id, ownerId }, select: { id: true } });
+  if (!capsule) return null;
+  const attachments = await db.attachment.findMany({ where: { capsuleId: id }, select: { storagePath: true } });
+  await db.capsule.deleteMany({ where: { id, ownerId } });
+  return attachments.map((a) => a.storagePath);
+}
