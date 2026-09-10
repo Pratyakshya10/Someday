@@ -4,7 +4,7 @@
 
 import { sendEmail } from "./email";
 import { getUserEmail } from "./admin";
-import { getScheduled, listDueMessages, markSent, markFailed, type ScheduledWithRelations } from "./scheduled";
+import { getScheduled, listDueMessageIds, claimDueMessage, markSent, markFailed, type ScheduledWithRelations } from "./scheduled";
 
 /** Build the reveal URL for a message from a base origin. */
 export function revealUrl(baseUrl: string, token: string): string {
@@ -103,17 +103,25 @@ export async function deliverMessage(
   return { ok: false, error: res.error };
 }
 
-/** Deliver every message that's due. Returns a small summary for logging. */
+/**
+ * Deliver every message that's due. Each one is claimed atomically first
+ * (scheduled -> sending) so this is safe to call from a scheduler that fires
+ * more often than one run takes to finish, or to have two schedulers hitting
+ * it at once — whichever call wins the claim sends it, the rest skip it.
+ * Returns a small summary for logging.
+ */
 export async function deliverDue(baseUrl: string): Promise<{ sent: number; failed: number; total: number }> {
-  const due = await listDueMessages();
+  const ids = await listDueMessageIds();
   let sent = 0;
   let failed = 0;
-  for (const msg of due) {
+  for (const id of ids) {
+    const msg = await claimDueMessage(id);
+    if (!msg) continue; // another run already has this one
     const res = await deliverMessage(msg, baseUrl);
     if (res.ok) sent++;
     else failed++;
   }
-  return { sent, failed, total: due.length };
+  return { sent, failed, total: ids.length };
 }
 
 /**
