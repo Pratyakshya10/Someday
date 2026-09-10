@@ -20,6 +20,7 @@ export {
   openIfDue,
   openByLocation,
   openByMilestone,
+  deleteCapsule,
   type Capsule,
   type DraftEdits,
   type LocationOpenResult,
