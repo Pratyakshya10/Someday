@@ -12,20 +12,22 @@ import {
   setMemberRoleAction,
   removeMemberAction,
 } from "../actions";
+import { Select } from "./Select";
 
 const roleLabel = (r: MemberRole) => (r === "owner" ? "Owner" : r === "editor" ? "Can edit" : "Can view");
 
 function RoleSelect({ value, onChange, disabled }: { value: MemberRole; onChange: (r: MemberRole) => void; disabled?: boolean }) {
   return (
-    <select
+    <Select
       value={value === "viewer" ? "viewer" : "editor"}
-      onChange={(e) => onChange(e.target.value as MemberRole)}
+      onChange={(v) => onChange(v as MemberRole)}
       disabled={disabled}
-      className="rounded-md border border-app-border bg-app-surface px-2 py-1 text-xs text-app-text outline-none disabled:opacity-50"
-    >
-      <option value="editor">Can edit</option>
-      <option value="viewer">Can view</option>
-    </select>
+      className="!py-1 text-xs"
+      options={[
+        { value: "editor", label: "Can edit" },
+        { value: "viewer", label: "Can view" },
+      ]}
+    />
   );
 }
 
