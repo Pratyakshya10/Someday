@@ -29,6 +29,7 @@ function whenLabel(iso: string | null): string {
 const STATUS_STYLE: Record<ScheduledView["status"], string> = {
   draft: "bg-app-surface text-app-dim border-app-border",
   scheduled: "bg-app-accent/10 text-app-accent border-app-accent/30",
+  sending: "bg-app-accent/10 text-app-accent border-app-accent/30",
   sent: "bg-app-accent text-app-on-accent border-app-accent",
   failed: "bg-app-surface text-app-accent border-app-accent/40",
   canceled: "bg-app-surface text-app-faint border-app-border",
