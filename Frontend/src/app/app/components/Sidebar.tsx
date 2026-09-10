@@ -22,7 +22,7 @@ export function Sidebar() {
       {/* header */}
       <div className={`flex items-center border-b border-app-border ${collapsed ? "justify-center py-[22px]" : "justify-between px-5 pb-[18px] pt-[22px]"}`}>
         {!collapsed && (
-          <Link href="/app/vault" className="font-serif text-2xl font-semibold italic text-app-text">
+          <Link href="/app/vault" className="font-logo text-3xl text-app-text">
             Someday
           </Link>
         )}
