@@ -27,7 +27,7 @@ export function SignIn({ oauthError }: { oauthError?: string }) {
             <Kicker>Someday</Kicker>
           </div>
           <h1 className="font-serif text-[clamp(26px,4vw,40px)] font-medium leading-[1.05] tracking-[-0.01em]">
-            A letter you <span className="italic">can&rsquo;t open</span> yet.
+            A letter you <span className="font-square-peg">can&rsquo;t open</span> yet.
           </h1>
           <p className="mx-auto mt-3 max-w-[360px] text-sm leading-[1.6] text-app-dim">
             Write it once. Seal it with your voice, your photographs, a short film. Choose the day it finds you again.
