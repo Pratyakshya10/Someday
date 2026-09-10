@@ -76,7 +76,7 @@ export interface ContactView {
   createdAt: string;
 }
 
-export type ScheduledStatus = "draft" | "scheduled" | "sent" | "failed" | "canceled";
+export type ScheduledStatus = "draft" | "scheduled" | "sending" | "sent" | "failed" | "canceled";
 
 // A scheduled message as it crosses to the client: the delivery lifecycle plus
 // the recipient and the backing capsule that holds its words + media.
