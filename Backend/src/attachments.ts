@@ -77,6 +77,21 @@ export function getAttachment(id: string, ownerId: string): Promise<Attachment |
   return db.attachment.findFirst({ where: { id, ownerId } });
 }
 
+/** Set (or clear) a photo/video's caption. Only while its capsule is a draft,
+ *  and only your own attachment. Returns the updated row, or null. */
+export async function setAttachmentCaption(
+  id: string,
+  ownerId: string,
+  caption: string | null,
+): Promise<Attachment | null> {
+  const found = await db.attachment.findFirst({
+    where: { id, ownerId },
+    include: { capsule: { select: { status: true } } },
+  });
+  if (!found || found.capsule.status !== "draft") return null;
+  return db.attachment.update({ where: { id }, data: { caption } });
+}
+
 /**
  * Delete an attachment row (only while its capsule is a draft) and return the
  * storagePath so the caller can remove the bytes too. Null if not found / not
