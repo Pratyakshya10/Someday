@@ -81,7 +81,7 @@ export function LetterEditor({ capsule, attachments }: { capsule: CapsuleView; a
                 className="min-w-0 flex-1 border-none bg-transparent italic text-app-text outline-none placeholder:text-app-faint"
               />
             </div>
-            <div className="mb-5 font-script text-[18px] text-app-dim">the {today}</div>
+            <div className="mb-5 font-square-peg text-[18px] text-app-text">the {today}</div>
 
             <RichLetter
               ref={letterRef}
@@ -91,13 +91,13 @@ export function LetterEditor({ capsule, attachments }: { capsule: CapsuleView; a
               onChange={setBody}
               onRequestVoice={() => note.setRecording("voice")}
               onAttachFiles={note.onAttachFiles}
-              onRemoveVoice={(id) => void note.media.remove(id)}
+              onRemoveAttachment={(id) => void note.media.remove(id)}
             />
           </div>
         </div>
 
         <div className="flex animate-[sdRise_0.9s_0.1s_both] flex-col gap-[22px] lg:sticky lg:top-[30px]">
-          <MediaStudio media={note.media} onRecord={note.setRecording} onRemove={(id) => void note.media.remove(id)} />
+          <MediaStudio media={note.media} onRecord={note.setRecording} onRemove={note.removeAttachment} />
           <PrimaryButton onClick={toDelivery} className={`w-full justify-center ${leaving ? "pointer-events-none opacity-70" : ""}`}>
             {leaving ? "Saving…" : "Set delivery"}
           </PrimaryButton>
