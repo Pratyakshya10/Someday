@@ -14,6 +14,7 @@ export interface AttachmentView {
   mimeType: string;
   sizeBytes: number;
   durationSec: number | null;
+  caption: string | null;
   url: string;
 }
 
