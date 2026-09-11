@@ -36,16 +36,27 @@ export interface Media {
   setCaption: (id: string, caption: string) => Promise<void>;
 }
 
-/** All the upload/delete plumbing for one capsule's media. `onUploaded` fires
- *  once per successful upload (used to drop voice notes inline). */
+/** All the upload/delete plumbing for one capsule's (or journal entry's)
+ *  media. `onUploaded` fires once per successful upload (used to drop voice
+ *  notes inline). `resource` picks which API routes to hit — defaults to
+ *  "capsule" so every existing call site is unaffected. */
 export function useMedia(
-  capsuleId: string,
+  ownerEntityId: string,
   initial: AttachmentView[],
   onUploaded?: (att: AttachmentView) => void,
+  resource: "capsule" | "journal" = "capsule",
 ): Media {
   const [items, setItems] = useState<AttachmentView[]>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Upload posts to the entity's own media collection; item-level ops
+  // (caption/delete) address one attachment by its own id.
+  const uploadUrl = resource === "journal" ? `/api/journal/${ownerEntityId}/media` : `/api/capsule/${ownerEntityId}/media`;
+  const itemUrl = useCallback(
+    (id: string) => (resource === "journal" ? `/api/journal-media/${id}` : `/api/media/${id}`),
+    [resource],
+  );
 
   const uploadedCb = useRef(onUploaded);
   useEffect(() => {
@@ -61,7 +72,7 @@ export function useMedia(
         fd.append("file", file);
         fd.append("kind", kind);
         if (durationSec != null) fd.append("durationSec", String(durationSec));
-        const res = await fetch(`/api/capsule/${capsuleId}/media`, { method: "POST", body: fd });
+        const res = await fetch(uploadUrl, { method: "POST", body: fd });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Upload failed");
         const att = json.attachment as AttachmentView;
@@ -75,7 +86,7 @@ export function useMedia(
         setBusy(false);
       }
     },
-    [capsuleId],
+    [uploadUrl],
   );
 
   const pickFiles = useCallback(
@@ -92,16 +103,16 @@ export function useMedia(
   const remove = useCallback(async (id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id)); // optimistic
     try {
-      await fetch(`/api/media/${id}`, { method: "DELETE" });
+      await fetch(itemUrl(id), { method: "DELETE" });
     } catch {
       // Gone from view; a reload would restore it if the request failed.
     }
-  }, []);
+  }, [itemUrl]);
 
   const setCaption = useCallback(async (id: string, caption: string) => {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, caption: caption || null } : i))); // optimistic
     try {
-      await fetch(`/api/media/${id}`, {
+      await fetch(itemUrl(id), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ caption }),
@@ -109,7 +120,7 @@ export function useMedia(
     } catch {
       // Local state already shows it; a reload would restore the saved value.
     }
-  }, []);
+  }, [itemUrl]);
 
   return { items, busy, error, upload, pickFiles, remove, setCaption };
 }
