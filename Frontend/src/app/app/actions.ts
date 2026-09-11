@@ -74,7 +74,14 @@ export async function authAction(_prev: AuthState, formData: FormData): Promise<
 
   // Establish the session (works for a fresh signup too, since it's confirmed).
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: error.message };
+  if (error) {
+    // Supabase's own wording ("Invalid login credentials") reads like a
+    // system error rather than "check your password" — say it plainly.
+    if (mode === "login" && /invalid.*credentials/i.test(error.message)) {
+      return { error: "Incorrect email or password." };
+    }
+    return { error: error.message };
+  }
 
   redirect("/app/vault");
 }
