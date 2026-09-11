@@ -18,13 +18,14 @@ import type { RichLetterHandle } from "./RichLetter";
 // a param so nothing returned here is a ref — that keeps render-time access to
 // the returned values clean.
 export function useNoteEditing(
-  capsuleId: string,
+  entityId: string,
   initialAttachments: AttachmentView[],
   letterRef: RefObject<RichLetterHandle | null>,
+  resource: "capsule" | "journal" = "capsule",
 ) {
-  const media = useMedia(capsuleId, initialAttachments, (att) => {
+  const media = useMedia(entityId, initialAttachments, (att) => {
     if (att.kind === "voice") letterRef.current?.insertVoice(att);
-  });
+  }, resource);
   const [recording, setRecording] = useState<null | "voice" | "video">(null);
 
   const onRecorderDone = async (file: File, duration: number) => {
