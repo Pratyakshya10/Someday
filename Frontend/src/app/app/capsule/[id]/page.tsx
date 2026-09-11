@@ -6,7 +6,6 @@ import {
   listAttachments,
   listCapsuleAttachments,
   listContributions,
-  resolveEmailInvites,
   getUserEmails,
 } from "@someday/backend";
 import { requireUser } from "@/lib/auth";
@@ -19,7 +18,6 @@ export const dynamic = "force-dynamic";
 export default async function CapsulePage({ params }: PageProps<"/app/capsule/[id]">) {
   const { id } = await params;
   const user = await requireUser();
-  if (user.email) await resolveEmailInvites(user.id, user.email);
 
   const access = await getAccessibleCapsule(id, user.id);
   if (!access) notFound();
