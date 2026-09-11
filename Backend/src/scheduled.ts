@@ -121,11 +121,21 @@ export function getScheduledByToken(token: string): Promise<ScheduledWithRelatio
   });
 }
 
-/** Ids of messages due to go out right now: scheduled, with a send time now
- *  or past. Just ids — claim each one individually before touching it. */
+// A `failed` send is retried automatically by the same cron sweep — not by
+// the owner clicking a button — but only after this cooldown, so a
+// permanently-bad address doesn't get hammered every cron tick.
+const RETRY_COOLDOWN_MS = 30 * 60 * 1000;
+
+function retryEligible(now: Date) {
+  return { status: "failed" as const, updatedAt: { lte: new Date(now.getTime() - RETRY_COOLDOWN_MS) } };
+}
+
+/** Ids of messages due to go out right now: scheduled (or a past failed
+ *  attempt past its retry cooldown), with a send time now or past. Just
+ *  ids — claim each one individually before touching it. */
 export async function listDueMessageIds(now: Date = new Date()): Promise<string[]> {
   const rows = await db.scheduledMessage.findMany({
-    where: { status: "scheduled", sendAt: { lte: now } },
+    where: { sendAt: { lte: now }, OR: [{ status: "scheduled" }, retryEligible(now)] },
     select: { id: true },
     orderBy: { sendAt: "asc" },
   });
@@ -133,17 +143,18 @@ export async function listDueMessageIds(now: Date = new Date()): Promise<string[
 }
 
 /**
- * Atomically claim one due message for delivery — flips it from `scheduled`
- * to `sending` only if it's still `scheduled`. If a delivery run is
- * triggered more than once for the same window (two overlapping cron calls,
- * an external scheduler firing faster than a run finishes, …), only the
- * caller that wins this flip gets to send it; everyone else sees count 0 and
- * moves on. Returns the full row on a win, or null if someone else already
- * has it (or it's gone).
+ * Atomically claim one due message for delivery — flips it to `sending` only
+ * if it's still eligible (still `scheduled`, or `failed` past its retry
+ * cooldown). If a delivery run is triggered more than once for the same
+ * window (two overlapping cron calls, an external scheduler firing faster
+ * than a run finishes, …), only the caller that wins this flip gets to send
+ * it; everyone else sees count 0 and moves on. Returns the full row on a
+ * win, or null if someone else already has it (or it's gone).
  */
 export async function claimDueMessage(id: string): Promise<ScheduledWithRelations | null> {
+  const now = new Date();
   const res = await db.scheduledMessage.updateMany({
-    where: { id, status: "scheduled" },
+    where: { id, OR: [{ status: "scheduled" }, retryEligible(now)] },
     data: { status: "sending" },
   });
   if (res.count === 0) return null;
