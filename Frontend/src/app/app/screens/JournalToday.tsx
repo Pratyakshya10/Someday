@@ -183,7 +183,7 @@ export function JournalToday({
               {justSaved && <span className="text-sm text-app-accent">Saved to your journal ✓</span>}
               <div ref={saveWrapRef} className="inline-block">
                 <PrimaryButton onClick={doSave} showArrow={false} className={save === "saving" ? "pointer-events-none opacity-70" : ""}>
-                  {save === "saving" ? "Saving…" : "Save"}
+                  {save === "saving" ? "Saving…" : justSaved ? "Saved" : "Save"}
                 </PrimaryButton>
               </div>
             </div>
