@@ -128,7 +128,7 @@ export function useMedia(
 /** The handwritten caption under a polaroid, if it has one. */
 function PolaroidCaption({ caption }: { caption: string | null }) {
   if (!caption) return null;
-  return <p className="mt-2 truncate px-1 text-center font-square-peg text-[16px] leading-none text-app-text">{caption}</p>;
+  return <p className="mt-2 break-words px-1 text-center font-square-peg text-[16px] leading-snug text-app-text">{caption}</p>;
 }
 
 /** Full-size view of a photo, opened by clicking its polaroid. Click anywhere
