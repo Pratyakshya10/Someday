@@ -10,31 +10,10 @@ import {
   signedUrl,
 } from "@someday/backend";
 import { getOwnerId } from "@/lib/auth";
+import { MAX_UPLOAD_BYTES, extFor } from "@/lib/media";
 import type { AttachmentKind } from "@/app/app/types";
 
-const MAX_BYTES = 50 * 1024 * 1024; // 50 MB per file
 const KINDS: AttachmentKind[] = ["voice", "photo", "video"];
-
-const EXT_BY_MIME: Record<string, string> = {
-  "audio/webm": "webm",
-  "audio/ogg": "ogg",
-  "audio/mp4": "m4a",
-  "audio/mpeg": "mp3",
-  "audio/wav": "wav",
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-  "video/webm": "webm",
-  "video/mp4": "mp4",
-  "video/quicktime": "mov",
-};
-
-function extFor(mime: string, filename: string): string {
-  if (EXT_BY_MIME[mime]) return EXT_BY_MIME[mime];
-  const fromName = filename.includes(".") ? filename.split(".").pop() : "";
-  return (fromName || "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "bin";
-}
 
 export async function POST(req: Request, { params }: RouteContext<"/api/capsule/[id]/media">) {
   const { id } = await params;
@@ -49,7 +28,7 @@ export async function POST(req: Request, { params }: RouteContext<"/api/capsule/
   if (!(file instanceof File)) return Response.json({ error: "No file" }, { status: 400 });
   if (!KINDS.includes(kind)) return Response.json({ error: "Bad kind" }, { status: 400 });
   if (file.size === 0) return Response.json({ error: "Empty file" }, { status: 400 });
-  if (file.size > MAX_BYTES) return Response.json({ error: "File too large (max 50MB)" }, { status: 413 });
+  if (file.size > MAX_UPLOAD_BYTES) return Response.json({ error: "File too large (max 50MB)" }, { status: 413 });
 
   const durationSec = durationRaw != null && durationRaw !== "" ? Math.round(Number(durationRaw)) : null;
   const mime = file.type || "application/octet-stream";
