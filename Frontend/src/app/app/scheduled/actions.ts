@@ -3,7 +3,6 @@
 // and scopes every change to them.
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import {
   addContact,
   deleteContact,
@@ -12,20 +11,10 @@ import {
   scheduleMessage,
   unscheduleMessage,
   deleteScheduled,
-  deliverNow,
 } from "@someday/backend";
 import { requireOwnerId } from "@/lib/auth";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-
-/** The public origin of this request, for building reveal links. */
-async function requestOrigin(): Promise<string> {
-  if (process.env.APP_URL) return process.env.APP_URL;
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
-}
 
 /** Add (or update) a contact. */
 export async function addContactAction(input: {
@@ -109,15 +98,4 @@ export async function deleteScheduledAction(id: string): Promise<{ ok: boolean }
   const ok = await deleteScheduled(id, ownerId);
   if (ok) revalidatePath("/app/scheduled");
   return { ok };
-}
-
-/**
- * Send one of your scheduled letters right now, ignoring its date — for testing
- * the delivery end-to-end. Emails the recipient via Resend.
- */
-export async function sendNowAction(id: string): Promise<{ ok: boolean; error?: string }> {
-  const ownerId = await requireOwnerId();
-  const res = await deliverNow(id, ownerId, await requestOrigin());
-  if (res.ok) revalidatePath("/app/scheduled");
-  return res;
 }
