@@ -302,3 +302,55 @@ model ScheduledMessage {
   @@index([status, sendAt]) // the delivery worker scans due, scheduled rows
   @@map("scheduled_messages")
 }
+
+// ─────────────────────────────────────────────────────────────
+// Journal — a private daily entry, separate from the capsule/letter
+// lifecycle: always editable, never sealed, one per calendar day.
+// ─────────────────────────────────────────────────────────────
+
+model JournalEntry {
+  id String @id @default(uuid()) @db.Uuid
+
+  ownerId String @map("owner_id") @db.Uuid
+
+  // The calendar day this entry belongs to (date-only). The client sends its
+  // own local YYYY-MM-DD, same convention as a capsule's delivery date.
+  entryDate DateTime @map("entry_date") @db.Date
+
+  body String  @default("")
+  mood String? // one emoji, free text rather than an enum — the set can grow without a migration
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  attachments JournalAttachment[]
+
+  @@unique([ownerId, entryDate])
+  @@index([ownerId])
+  @@map("journal_entries")
+}
+
+// Mirrors Attachment's shape. Not reusing Attachment directly — its capsuleId
+// FK is non-nullable and hardcoded, so a parallel model is simpler than
+// retrofitting polymorphism onto it.
+model JournalAttachment {
+  id String @id @default(uuid()) @db.Uuid
+
+  entryId String       @map("entry_id") @db.Uuid
+  entry   JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  ownerId String @map("owner_id") @db.Uuid
+
+  kind AttachmentKind
+
+  storagePath String @map("storage_path")
+  mimeType    String @map("mime_type")
+  sizeBytes   Int    @map("size_bytes")
+  durationSec Int?   @map("duration_sec")
+  caption     String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([entryId])
+  @@map("journal_attachments")
+}
