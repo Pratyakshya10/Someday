@@ -103,3 +103,23 @@ export {
   removeObject,
   ensureBucket,
 } from "./storage";
+
+// Journal — daily entries + their media, "on this day", and streaks.
+export {
+  getOrCreateEntry,
+  getEntry,
+  listAllEntries,
+  saveEntry,
+  deleteEntry,
+  addJournalAttachment,
+  listJournalAttachments,
+  setJournalAttachmentCaption,
+  deleteJournalAttachment,
+  onThisDay,
+  currentStreak,
+  type JournalEntry,
+  type JournalAttachment,
+  type JournalEdits,
+  type NewJournalAttachment,
+  type OnThisDayEntry,
+} from "./journal";
