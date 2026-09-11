@@ -132,8 +132,14 @@ export async function onThisDay(ownerId: string, isoToday: string): Promise<OnTh
   const month = today.getUTCMonth() + 1;
   const day = today.getUTCDate();
   const currentYear = today.getUTCFullYear();
+  // $queryRaw returns raw column names (snake_case), not the camelCase
+  // Prisma field names JournalEntry's type implies — alias them explicitly
+  // so the rest of this file can treat rows as real JournalEntry objects.
   const rows = await db.$queryRaw<JournalEntry[]>`
-    SELECT * FROM journal_entries
+    SELECT
+      id, owner_id AS "ownerId", entry_date AS "entryDate", body, mood,
+      created_at AS "createdAt", updated_at AS "updatedAt"
+    FROM journal_entries
     WHERE owner_id = ${ownerId}::uuid
       AND EXTRACT(MONTH FROM entry_date) = ${month}
       AND EXTRACT(DAY FROM entry_date) = ${day}
