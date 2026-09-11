@@ -3,10 +3,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { JournalEntryView } from "../types";
-import { Kicker, PrimaryButton, GhostButton, ScreenFrame } from "../components/ui";
+import { Kicker, GhostButton, ScreenFrame } from "../components/ui";
 import { MediaGallery } from "../components/Attachments";
 import { renderLetterBody } from "../components/LetterBody";
-import { deleteJournalEntryAction, sealEntryAsCapsuleAction } from "../journal/actions";
+import { deleteJournalEntryAction } from "../journal/actions";
 
 function fmt(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
@@ -14,15 +14,8 @@ function fmt(iso: string): string {
 
 export function JournalEntryDetail({ entry }: { entry: JournalEntryView }) {
   const router = useRouter();
-  const [sealing, startSealing] = useTransition();
   const [deleting, startDeleting] = useTransition();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-
-  const sealForFuture = () =>
-    startSealing(async () => {
-      const r = await sealEntryAsCapsuleAction(entry.id);
-      if (r.ok && r.capsuleId) router.push(`/app/capsule/${r.capsuleId}/editor`);
-    });
 
   const remove = () =>
     startDeleting(async () => {
@@ -51,9 +44,6 @@ export function JournalEntryDetail({ entry }: { entry: JournalEntryView }) {
           <Link href="/app/journal/browse">
             <GhostButton>Back to entries</GhostButton>
           </Link>
-          <PrimaryButton onClick={sealForFuture} className={sealing ? "pointer-events-none opacity-70" : ""}>
-            {sealing ? "Sealing…" : "Seal this for future-you"}
-          </PrimaryButton>
           {confirmingDelete ? (
             <span className="inline-flex items-center gap-2 text-sm text-app-dim">
               Delete this entry for good?
