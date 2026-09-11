@@ -9,7 +9,6 @@ import {
   createScheduledDraftAction,
   unscheduleMessageAction,
   deleteScheduledAction,
-  sendNowAction,
 } from "../scheduled/actions";
 
 const inputCls =
@@ -48,7 +47,6 @@ export function Scheduled({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [flash, setFlash] = useState<string | null>(null);
   const [showBook, setShowBook] = useState(false);
 
   const write = () =>
@@ -86,14 +84,6 @@ export function Scheduled({
       router.refresh();
     });
 
-  const sendNow = (id: string) =>
-    start(async () => {
-      setFlash(null);
-      const res = await sendNowAction(id);
-      setFlash(res.ok ? "Sent — check the recipient's inbox." : res.error ?? "Couldn't send that.");
-      router.refresh();
-    });
-
   return (
     <ScreenFrame>
       <div className="mx-auto max-w-[920px] animate-[sdRise_0.7s_both]">
@@ -117,7 +107,6 @@ export function Scheduled({
         {/* scheduled + draft messages */}
         <div className="mb-7">
           <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-app-faint">Letters in flight</div>
-          {flash && <p className="mb-3 text-[13px] text-app-accent">{flash}</p>}
           {messages.length === 0 ? (
             <div className="rounded-xl border border-dashed border-app-border bg-app-surface p-8 text-center text-sm text-app-dim">
               Nothing here yet. Hit <span className="text-app-text">Write a message</span> to start your first letter.
@@ -126,7 +115,6 @@ export function Scheduled({
             <div className="flex flex-col gap-2">
               {messages.map((m) => {
                 const editable = m.status === "draft" || m.status === "scheduled";
-                const retryable = m.status === "scheduled" || m.status === "failed";
                 return (
                   <div key={m.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-app-border bg-app-panel px-4 py-3 backdrop-blur-xl">
                     <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] ${STATUS_STYLE[m.status]}`}>
@@ -138,7 +126,11 @@ export function Scheduled({
                         <span className="text-app-dim">{m.contact ? ` · to ${m.contact.name}` : " · no recipient yet"}</span>
                       </div>
                       <div className="truncate text-xs text-app-dim">
-                        {m.sendAt ? `Sends ${whenLabel(m.sendAt)}${m.occasion ? ` · ${m.occasion}` : ""}` : "Not scheduled yet"}
+                        {m.status === "failed"
+                          ? "Couldn't send — we'll try again automatically."
+                          : m.sendAt
+                            ? `Sends ${whenLabel(m.sendAt)}${m.occasion ? ` · ${m.occasion}` : ""}`
+                            : "Not scheduled yet"}
                       </div>
                     </div>
                     {editable && (
@@ -148,11 +140,6 @@ export function Scheduled({
                         className="rounded-full border border-app-border px-3.5 py-1.5 text-[11px] uppercase tracking-[0.14em] text-app-dim transition-colors hover:text-app-text"
                       >
                         {m.status === "scheduled" ? "View" : "Continue"}
-                      </button>
-                    )}
-                    {retryable && (
-                      <button onClick={() => sendNow(m.id)} disabled={pending} className="rounded-full border border-app-accent/30 px-3.5 py-1.5 text-[11px] uppercase tracking-[0.14em] text-app-accent transition-colors hover:bg-app-accent/10">
-                        {m.status === "failed" ? "Retry" : "Send now"}
                       </button>
                     )}
                     {m.status === "scheduled" && (
