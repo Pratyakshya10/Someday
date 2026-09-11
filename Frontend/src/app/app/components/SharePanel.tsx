@@ -8,6 +8,7 @@ import type { MemberView, InviteView, MemberRole } from "../types";
 import {
   createLinkInviteAction,
   inviteEmailAction,
+  resendInviteEmailAction,
   revokeInviteAction,
   setMemberRoleAction,
   removeMemberAction,
@@ -48,6 +49,9 @@ export function SharePanel({
   const [linkUrl, setLinkUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+  const [resentId, setResentId] = useState<string | null>(null);
 
   const linkInvite = invites.find((i) => i.email === null);
   const emailInvites = invites.filter((i) => i.email !== null && !i.accepted);
@@ -84,11 +88,34 @@ export function SharePanel({
   const addEmail = () =>
     start(async () => {
       setError(null);
+      setNotice(null);
       const res = await inviteEmailAction(capsuleId, email, emailRole);
       if (!res.ok) return setError(res.error ?? "Couldn't add that email.");
+      if (res.warning) setNotice(res.warning);
       setEmail("");
       router.refresh();
     });
+
+  const resend = (id: string) =>
+    start(async () => {
+      setNotice(null);
+      const res = await resendInviteEmailAction(capsuleId, id);
+      if (res.warning) setNotice(res.warning);
+      else {
+        setResentId(id);
+        setTimeout(() => setResentId(null), 1500);
+      }
+    });
+
+  const copyInvite = async (token: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(buildUrl(token));
+      setCopiedInviteId(id);
+      setTimeout(() => setCopiedInviteId(null), 1500);
+    } catch {
+      /* clipboard blocked — Resend still works */
+    }
+  };
 
   const revoke = (id: string) => start(async () => { await revokeInviteAction(capsuleId, id); router.refresh(); });
   const changeRole = (userId: string, role: MemberRole) => start(async () => { await setMemberRoleAction(capsuleId, userId, role); router.refresh(); });
@@ -135,6 +162,7 @@ export function SharePanel({
           </button>
         </div>
         {error && <p className="mt-2 text-[13px] text-app-accent">{error}</p>}
+        {notice && <p className="mt-2 text-[13px] text-app-dim">{notice}</p>}
       </div>
 
       {/* members */}
@@ -159,6 +187,12 @@ export function SharePanel({
           <div key={i.id} className="flex items-center gap-2 text-sm text-app-dim">
             <span className="min-w-0 flex-1 truncate">{i.email}</span>
             <span className="text-xs">Invited · {roleLabel(i.role)}</span>
+            <button onClick={() => copyInvite(i.token, i.id)} disabled={pending} className="text-xs text-app-faint hover:text-app-accent">
+              {copiedInviteId === i.id ? "Copied" : "Copy link"}
+            </button>
+            <button onClick={() => resend(i.id)} disabled={pending} className="text-xs text-app-faint hover:text-app-accent">
+              {resentId === i.id ? "Sent" : "Resend"}
+            </button>
             <button onClick={() => revoke(i.id)} disabled={pending} className="text-app-faint hover:text-app-accent" aria-label="Revoke">✕</button>
           </div>
         ))}
