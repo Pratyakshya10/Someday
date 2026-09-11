@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import type { JournalEntryView, OnThisDayView } from "../types";
-import { GhostButton, ScreenFrame, Kicker } from "../components/ui";
+import { PrimaryButton, GhostButton, ScreenFrame, Kicker } from "../components/ui";
 import { MediaStudio, LetterGallery } from "../components/Attachments";
 import { Recorder } from "../components/Recorder";
 import { RichLetter, type RichLetterHandle } from "../components/RichLetter";
@@ -65,12 +65,25 @@ export function JournalToday({
   const [body, setBody] = useState(entry.body ?? "");
   const [mood, setMood] = useState<string | null>(entry.mood);
   const [save, setSave] = useState<SaveState>("idle");
+  const [justSaved, setJustSaved] = useState(false);
+  const [localStreak, setLocalStreak] = useState(streak);
 
   const letterRef = useRef<RichLetterHandle | null>(null);
   const note = useNoteEditing(entry.id, entry.attachments, letterRef, "journal");
 
   const first = useRef(true);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedPulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // The current streak already counts today once its body is non-empty — so
+  // only bump the bucket locally the first time this session's save turns an
+  // empty entry into a written one.
+  const countedToday = useRef(!!entry.body.trim());
+
+  const saveWrapRef = useRef<HTMLDivElement | null>(null);
+  const bucketRef = useRef<HTMLDivElement | null>(null);
+  const flyKey = useRef(0);
+  const [flying, setFlying] = useState<{ x: number; y: number; dx: number; dy: number; key: number } | null>(null);
 
   useEffect(() => {
     if (first.current) {
@@ -89,6 +102,43 @@ export function JournalToday({
   }, [body, mood, entry.id]);
 
   const saveLabel = save === "saving" ? "Saving…" : save === "saved" ? "Autosaved" : "Today";
+
+  const doSave = async () => {
+    if (timer.current) clearTimeout(timer.current);
+    setSave("saving");
+    await saveJournalEntryAction(entry.id, { body, mood });
+    setSave("saved");
+
+    const btn = saveWrapRef.current;
+    const bucket = bucketRef.current;
+    if (btn && bucket) {
+      const b = btn.getBoundingClientRect();
+      const k = bucket.getBoundingClientRect();
+      flyKey.current += 1;
+      setFlying({
+        x: b.left + b.width / 2,
+        y: b.top + b.height / 2,
+        dx: k.left + k.width / 2 - (b.left + b.width / 2),
+        dy: k.top + k.height / 2 - (b.top + b.height / 2),
+        key: flyKey.current,
+      });
+    }
+
+    if (!countedToday.current && body.trim()) {
+      countedToday.current = true;
+      setLocalStreak((s) => s + 1);
+    }
+
+    setJustSaved(true);
+    if (savedPulseTimer.current) clearTimeout(savedPulseTimer.current);
+    savedPulseTimer.current = setTimeout(() => setJustSaved(false), 1600);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (savedPulseTimer.current) clearTimeout(savedPulseTimer.current);
+    };
+  }, []);
 
   return (
     <ScreenFrame>
@@ -128,6 +178,15 @@ export function JournalToday({
               onRemoveAttachment={(id) => void note.media.remove(id)}
             />
             <LetterGallery media={note.media} onRemove={note.removeAttachment} />
+
+            <div className="mt-5 flex items-center justify-end gap-3">
+              {justSaved && <span className="text-sm text-app-accent">Saved to your journal ✓</span>}
+              <div ref={saveWrapRef} className="inline-block">
+                <PrimaryButton onClick={doSave} showArrow={false} className={save === "saving" ? "pointer-events-none opacity-70" : ""}>
+                  {save === "saving" ? "Saving…" : "Save"}
+                </PrimaryButton>
+              </div>
+            </div>
           </div>
 
           {onThisDay.length > 0 && (
@@ -154,12 +213,12 @@ export function JournalToday({
         </div>
 
         <div className="flex animate-[sdRise_0.9s_0.1s_both] flex-col gap-[22px] lg:sticky lg:top-[30px]">
-          <div className="rounded-lg border border-app-border bg-app-surface p-6 text-center shadow-[0_18px_50px_rgba(43,38,33,0.08)] backdrop-blur-xl">
-            <JournalBucket streak={streak} />
+          <div ref={bucketRef} className="rounded-lg border border-app-border bg-app-surface p-6 text-center shadow-[0_18px_50px_rgba(43,38,33,0.08)] backdrop-blur-xl">
+            <JournalBucket streak={localStreak} />
             <div className="mt-3 font-square-peg text-[16px] text-app-text">
-              {streak > 0 ? (
+              {localStreak > 0 ? (
                 <>
-                  {streak} day{streak === 1 ? "" : "s"}, quietly kept
+                  {localStreak} day{localStreak === 1 ? "" : "s"}, quietly kept
                 </>
               ) : (
                 "Your first page starts today"
@@ -174,6 +233,24 @@ export function JournalToday({
       </div>
 
       {note.recording && <Recorder mode={note.recording} onClose={() => note.setRecording(null)} onDone={note.onRecorderDone} />}
+
+      {flying && (
+        <div
+          key={flying.key}
+          aria-hidden
+          className="pointer-events-none fixed z-50 h-[46px] w-[33px] rounded-[2px] border border-app-border/60 bg-[#f7f1e4] shadow-[0_8px_20px_rgba(43,38,33,0.3)]"
+          style={
+            {
+              left: flying.x - 16.5,
+              top: flying.y - 23,
+              animation: "sdFlyToBucket 0.75s cubic-bezier(0.3,0,0.2,1) forwards",
+              "--fly-dx": `${flying.dx}px`,
+              "--fly-dy": `${flying.dy}px`,
+            } as CSSProperties
+          }
+          onAnimationEnd={() => setFlying(null)}
+        />
+      )}
     </ScreenFrame>
   );
 }
