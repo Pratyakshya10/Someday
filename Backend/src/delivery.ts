@@ -1,10 +1,11 @@
 // Delivery — turns a due ScheduledMessage into an email with a private reveal
 // link, sends it via Resend, and records the outcome. This is what the cron
-// route calls; it can also send a single message on demand (for a test).
+// route calls, automatically, on every sweep — there's no manual "send now"
+// in this app; a scheduled message just goes out on its own.
 
 import { sendEmail } from "./email";
 import { getUserEmail } from "./admin";
-import { getScheduled, listDueMessageIds, claimDueMessage, markSent, markFailed, type ScheduledWithRelations } from "./scheduled";
+import { listDueMessageIds, claimDueMessage, markSent, markFailed, type ScheduledWithRelations } from "./scheduled";
 
 /** Build the reveal URL for a message from a base origin. */
 export function revealUrl(baseUrl: string, token: string): string {
@@ -122,22 +123,4 @@ export async function deliverDue(baseUrl: string): Promise<{ sent: number; faile
     else failed++;
   }
   return { sent, failed, total: ids.length };
-}
-
-/**
- * Send one of your own scheduled messages right now, ignoring its send date —
- * used by the owner to test the whole flow without waiting. Owner-scoped.
- */
-export async function deliverNow(
-  id: string,
-  ownerId: string,
-  baseUrl: string,
-): Promise<{ ok: boolean; error?: string }> {
-  const msg = await getScheduled(id, ownerId);
-  if (!msg) return { ok: false, error: "Message not found." };
-  if (!msg.contact) return { ok: false, error: "Choose a recipient first." };
-  if (msg.status === "sent") return { ok: false, error: "Already sent." };
-  if (msg.status === "canceled") return { ok: false, error: "This message was canceled." };
-  // A draft, a scheduled message, or a failed attempt can all be sent right now.
-  return deliverMessage(msg, baseUrl);
 }
