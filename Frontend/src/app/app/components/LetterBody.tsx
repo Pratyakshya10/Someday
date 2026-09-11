@@ -1,14 +1,14 @@
 "use client";
 // Shared renderer for a stored letter body → React nodes. Understands the same
-// format the editor writes: a leading `[[font:slug]]` token, inline emphasis
-// markers (**b**, *i*, __u__), and inline `[[voice:xxxx]]` / `[[media:xxxx]]`
+// format the editor writes: leading `[[font:slug]]`/`[[size:slug]]` tokens,
+// inline emphasis markers (**b**, *i*, __u__), and inline `[[voice:xxxx]]` / `[[media:xxxx]]`
 // chips. Both the public reveal and the owner's capsule view render through
 // this, so a letter reads the same everywhere.
 
 import type { ReactNode } from "react";
 import type { AttachmentView } from "../types";
-import { splitLetter, parseFont, parseInline } from "../letter";
-import { fontCss } from "../fonts";
+import { splitLetter, parseFont, parseSize, parseInline } from "../letter";
+import { fontCss, fontSizePx } from "../fonts";
 import { MediaItem } from "./Attachments";
 
 /** Render one text segment's emphasis runs into styled spans. */
@@ -37,9 +37,12 @@ export function renderLetterBody(rawBody: string, attachments: AttachmentView[])
   nodes: ReactNode[];
   gallery: AttachmentView[];
   fontFamily: string;
+  fontSize: number;
 } {
-  const { font, body } = parseFont(rawBody);
+  const { font, body: afterFont } = parseFont(rawBody);
   const fontFamily = fontCss(font);
+  const { size, body } = parseSize(afterFont);
+  const fontSize = fontSizePx(size);
   const byShort = new Map(attachments.map((a) => [a.id.slice(0, 8), a]));
   const usedInline = new Set<string>();
 
@@ -50,7 +53,7 @@ export function renderLetterBody(rawBody: string, attachments: AttachmentView[])
         blocks.push({
           kind: "text",
           node: (
-            <p key={`t${i}`} className="whitespace-pre-wrap text-lg leading-[1.65]" style={{ fontFamily }}>
+            <p key={`t${i}`} className="whitespace-pre-wrap leading-[1.65]" style={{ fontFamily, fontSize }}>
               {runs(seg.text)}
             </p>
           ),
@@ -93,5 +96,5 @@ export function renderLetterBody(rawBody: string, attachments: AttachmentView[])
     }
   }
 
-  return { nodes, gallery: attachments.filter((a) => !usedInline.has(a.id)), fontFamily };
+  return { nodes, gallery: attachments.filter((a) => !usedInline.has(a.id)), fontFamily, fontSize };
 }
