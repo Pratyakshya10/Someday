@@ -134,6 +134,14 @@ body {
 @keyframes sdWave { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
 @keyframes sdSpin { to { transform: rotate(360deg); } }
 
+/* A saved journal page flying from the Save button into the bucket — the
+   endpoint is per-instance via the --fly-dx/--fly-dy custom properties. */
+@keyframes sdFlyToBucket {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+  65% { opacity: 1; }
+  100% { transform: translate(var(--fly-dx), var(--fly-dy)) scale(0.32) rotate(-20deg); opacity: 0; }
+}
+
 /* Vintage instant-film look for videos — warm, slightly faded, a touch of
    contrast — so clips read like an old polaroid/Super-8 recording. */
 .sd-film {
