@@ -94,7 +94,7 @@ export {
 
 // Delivery — render + send scheduled messages by email (Resend).
 export { sendEmail, type EmailResult } from "./email";
-export { deliverMessage, deliverDue, deliverNow, revealUrl } from "./delivery";
+export { deliverMessage, deliverDue, revealUrl } from "./delivery";
 
 export {
   MEDIA_BUCKET,
