@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useState } from "react";
-import { authAction, type AuthState } from "../actions";
+import { authAction, signInWithGoogleAction, type AuthState } from "../actions";
 import { Kicker } from "../components/ui";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -69,6 +69,27 @@ export function SignIn({ oauthError }: { oauthError?: string }) {
                 {pending ? "…" : signup ? "Create account" : "Log in"}
               </button>
             </div>
+          </form>
+
+          <div className="my-5 flex items-center gap-3 text-[11px] uppercase tracking-[0.16em] text-app-faint">
+            <span className="h-px flex-1 bg-app-border" />
+            or
+            <span className="h-px flex-1 bg-app-border" />
+          </div>
+
+          <form action={signInWithGoogleAction}>
+            <button
+              type="submit"
+              className="flex w-full items-center justify-center gap-2.5 rounded-full border border-app-border bg-app-surface px-6 py-3 text-[13px] font-medium text-app-text transition-colors hover:bg-app-panel"
+            >
+              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden>
+                <path
+                  fill="currentColor"
+                  d="M21.35 11.1h-9.17v2.98h5.3c-.23 1.4-1.6 4.1-5.3 4.1-3.19 0-5.8-2.64-5.8-5.9s2.61-5.9 5.8-5.9c1.82 0 3.04.78 3.74 1.45l2.55-2.46C17.13 3.4 14.9 2.4 12.18 2.4 6.98 2.4 2.78 6.6 2.78 11.8s4.2 9.4 9.4 9.4c5.43 0 9.02-3.82 9.02-9.2 0-.62-.07-1.09-.15-1.6Z"
+                />
+              </svg>
+              Continue with Google
+            </button>
           </form>
 
           <div className="mt-5 text-center text-sm text-app-dim">
