@@ -297,6 +297,7 @@ model ScheduledMessage {
 
   sentAt    DateTime? @map("sent_at")
   createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") // last touched — used to cool down retries of a failed send
 
   @@index([ownerId])
   @@index([status, sendAt]) // the delivery worker scans due, scheduled rows
