@@ -6,7 +6,6 @@ import {
   getOrCreateContribution,
   listMembers,
   listInvites,
-  resolveEmailInvites,
   getUserEmails,
 } from "@someday/backend";
 import { requireUser } from "@/lib/auth";
@@ -18,7 +17,6 @@ import { GroupEditor } from "../../../screens/GroupEditor";
 export default async function EditorPage({ params }: PageProps<"/app/capsule/[id]/editor">) {
   const { id } = await params;
   const user = await requireUser();
-  if (user.email) await resolveEmailInvites(user.id, user.email);
 
   const access = await getAccessibleCapsule(id, user.id);
   if (!access) notFound();
