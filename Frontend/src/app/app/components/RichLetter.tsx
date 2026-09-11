@@ -3,8 +3,9 @@
 // media "chips" (voice notes, photos, films), and light emphasis (bold /
 // italic / underline). Text is stored as a plain string: emphasis serializes
 // to markdown (**b**, *i*, __u__), each chip to a `[[voice:xxxxxxxx]]` or
-// `[[media:xxxxxxxx]]` marker, and the whole-letter font to a leading
-// `[[font:slug]]` token. So the persisted body stays a simple string that the
+// `[[media:xxxxxxxx]]` marker, and the whole-letter font/size to leading
+// `[[font:slug]]`/`[[size:slug]]` tokens. So the persisted body stays a
+// simple string that the
 // reveal parses back — and a photo dropped mid-paragraph shows up mid-paragraph
 // there too. The editor is uncontrolled (the DOM is the source of truth) to
 // keep the caret stable; every edit re-serializes and reports the new body up.
@@ -12,8 +13,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { AttachmentView, AttachmentKind } from "../types";
-import { splitLetter, parseFont, withFont, parseInline, type TextRun } from "../letter";
-import { LETTER_FONTS, fontCss } from "../fonts";
+import { splitLetter, parseFont, withFont, parseSize, withSize, parseInline, type TextRun } from "../letter";
+import { LETTER_FONTS, LETTER_SIZES, fontCss, fontSizePx } from "../fonts";
 import { Select } from "./Select";
 
 export interface RichLetterHandle {
@@ -69,6 +70,9 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
   // handlers) always reads the current value.
   const [font, setFontState] = useState("default");
   const fontRef = useRef("default");
+  // The whole-letter text size, same deal.
+  const [size, setSizeState] = useState("default");
+  const sizeRef = useRef("default");
   // Which toolbar buttons are "on" for the caret/selection right now, so
   // bold/italic/underline read as toggles instead of one-shot actions.
   const [active, setActive] = useState({ b: false, i: false, u: false });
@@ -136,9 +140,12 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
   const build = (raw: string) => {
     const el = elRef.current;
     if (!el) return;
-    const { font: f, body } = parseFont(raw);
+    const { font: f, body: afterFont } = parseFont(raw);
     fontRef.current = f ?? "default";
     setFontState(f ?? "default");
+    const { size: s, body } = parseSize(afterFont);
+    sizeRef.current = s ?? "default";
+    setSizeState(s ?? "default");
     el.textContent = "";
     for (const seg of splitLetter(body)) {
       if (seg.type === "text") {
@@ -197,7 +204,7 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
 
   const emit = () => {
     const el = elRef.current;
-    if (el) onChange(withFont(fontRef.current, serialize(el)));
+    if (el) onChange(withFont(fontRef.current, withSize(sizeRef.current, serialize(el))));
   };
 
   const saveSelection = () => {
@@ -311,6 +318,12 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
   const changeFont = (slug: string) => {
     fontRef.current = slug;
     setFontState(slug);
+    emit();
+  };
+
+  const changeSize = (slug: string) => {
+    sizeRef.current = slug;
+    setSizeState(slug);
     emit();
   };
 
@@ -474,6 +487,14 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
 
         <Select value={font} onChange={changeFont} options={LETTER_FONTS.map((f) => ({ value: f.slug, label: f.label, style: { fontFamily: f.css } }))} className="h-8 min-w-[128px]" previewFont />
 
+        <Select
+          value={size}
+          onChange={changeSize}
+          options={LETTER_SIZES.map((s) => ({ value: s.slug, label: s.label, style: { fontSize: Math.min(s.px, 16) } }))}
+          className="h-8 min-w-[128px]"
+          previewFont
+        />
+
         <span className="mx-1 h-6 w-px bg-app-border" />
 
         <button
@@ -518,7 +539,7 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
         role="textbox"
         aria-multiline="true"
         data-placeholder={placeholder}
-        style={{ fontFamily: fontCss(font) }}
+        style={{ fontFamily: fontCss(font), fontSize: fontSizePx(size) }}
         onInput={emit}
         onKeyUp={() => { saveSelection(); updateActive(); }}
         onMouseUp={() => { saveSelection(); updateActive(); }}
@@ -528,7 +549,7 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
         onDrop={onDrop}
         onDragOver={onDragOver}
         onClick={onClick}
-        className="sd-letter min-h-[48px] w-full whitespace-pre-wrap text-lg leading-[1.65] text-app-text outline-none"
+        className="sd-letter min-h-[48px] w-full whitespace-pre-wrap leading-[1.65] text-app-text outline-none"
       />
     </div>
   );
