@@ -87,6 +87,15 @@ export interface InviteView {
   accepted: boolean;
 }
 
+// An invite waiting on the signed-in user's own email — surfaced as a sidebar
+// notification ("Join <capsuleTitle>").
+export interface PendingInviteView {
+  id: string;
+  token: string;
+  role: MemberRole;
+  capsuleTitle: string | null;
+}
+
 // One member's note in a group capsule, with their media, for the reveal.
 export interface ContributionView {
   authorId: string;
