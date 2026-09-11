@@ -13,6 +13,7 @@ export const ICONS: Record<string, string> = {
   voice: "M12 3a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3ZM6 11a6 6 0 0 0 12 0M12 17v4",
   photos: "M4 5h16v14H4zM4 16l4-4 4 4 3-3 5 5",
   film: "M4 6h12v12H4zM16 10l4-2v8l-4-2",
+  journal: "M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V3ZM6 3a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2M9 8h6M9 12h6M9 16h3",
   google:
     "M21.35 11.1h-9.17v2.98h5.3c-.23 1.4-1.6 4.1-5.3 4.1-3.19 0-5.8-2.64-5.8-5.9s2.61-5.9 5.8-5.9c1.82 0 3.04.78 3.74 1.45l2.55-2.46C17.13 3.4 14.9 2.4 12.18 2.4 6.98 2.4 2.78 6.6 2.78 11.8s4.2 9.4 9.4 9.4c5.43 0 9.02-3.82 9.02-9.2 0-.62-.07-1.09-.15-1.6Z",
 };
@@ -20,6 +21,7 @@ export const ICONS: Record<string, string> = {
 // The real sidebar navigation — each entry is a route.
 export const NAV: { href: string; label: string; icon: string }[] = [
   { href: "/app/vault", label: "Your vault", icon: ICONS.vault },
+  { href: "/app/journal", label: "Journal", icon: ICONS.journal },
   { href: "/app/new", label: "New capsule", icon: ICONS.new },
   { href: "/app/scheduled", label: "Scheduled", icon: ICONS.scheduled },
 ];
@@ -51,3 +53,16 @@ export const PROMPTS: Record<TemplateKey, string> = {
   confess: "I have never said this out loud, but…",
   blank: "",
 };
+
+// Rotating placeholder for an empty daily journal entry, picked by day-of-year
+// so it's stable across reloads without needing to be stored anywhere.
+export const JOURNAL_PROMPTS: string[] = [
+  "What's still on your mind from today?",
+  "What made you pause today, even for a second?",
+  "Something small worth remembering…",
+  "What are you carrying into tomorrow?",
+  "Who or what crossed your mind today?",
+  "If today had a headline, what would it say?",
+  "What's something you didn't say out loud today?",
+  "What felt different about today?",
+];
