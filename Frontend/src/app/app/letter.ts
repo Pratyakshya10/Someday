@@ -26,6 +26,24 @@ export function withFont(font: string | null, body: string): string {
   return font && font !== "default" ? `[[font:${font}]]\n${clean}` : clean;
 }
 
+// The whole-letter text size rides the same way, right after the font token
+// (so a stored body reads `[[font:f]]\n[[size:s]]\n...` when both are set).
+export const SIZE_TOKEN_RE = /^\s*\[\[size:([a-z0-9-]+)\]\]\n?/;
+
+/** Pull a leading size token off a body, returning the slug and the remainder. */
+export function parseSize(body: string): { size: string | null; body: string } {
+  const m = body.match(SIZE_TOKEN_RE);
+  if (!m) return { size: null, body };
+  return { size: m[1], body: body.slice(m[0].length) };
+}
+
+/** Re-attach (or drop, when default/null) a size token at the start of a body. */
+export function withSize(size: string | null, body: string): string {
+  const { body: rest } = parseSize(body);
+  const clean = rest.replace(/^\n+/, "");
+  return size && size !== "default" ? `[[size:${size}]]\n${clean}` : clean;
+}
+
 // Inline emphasis is stored as lightweight markdown: **bold**, *italic*,
 // __underline__. A run is a stretch of text sharing the same emphasis.
 export interface TextRun {
@@ -110,11 +128,12 @@ export function removeMediaToken(body: string, attachmentId: string): string {
   return removeToken(body, "media", attachmentId);
 }
 
-/** Plain body text — voice/media markers, the font token, and emphasis markers
- *  all stripped (for previews/excerpts). */
+/** Plain body text — voice/media markers, the font/size tokens, and emphasis
+ *  markers all stripped (for previews/excerpts). */
 export function stripVoiceTokens(body: string): string {
   const { body: noFont } = parseFont(body);
-  return stripInline(noFont.replace(ANY_TOKEN_RE, "")).replace(/\n{3,}/g, "\n\n").trim();
+  const { body: noSize } = parseSize(noFont);
+  return stripInline(noSize.replace(ANY_TOKEN_RE, "")).replace(/\n{3,}/g, "\n\n").trim();
 }
 
 export type LetterSegment = { type: "text"; text: string } | { type: "voice" | "media"; id: string };
