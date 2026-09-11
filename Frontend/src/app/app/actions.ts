@@ -23,16 +23,28 @@ import {
   saveContribution,
   createLinkInvite,
   createEmailInvite,
+  getInviteById,
   revokeInvite,
   setMemberRole,
   removeMember,
   removeObject,
+  sendInviteEmail,
+  getUserEmail,
 } from "@someday/backend";
 import { requireOwnerId, requireUser } from "@/lib/auth";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { DEFAULT_RECIPIENT } from "./data";
 import type { CapsuleType, MemberRole, TemplateKey } from "./types";
+
+/** The app's public origin, for links inside emails (APP_URL, else the request's own host). */
+async function appOrigin(): Promise<string> {
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
 
 /** Owner-only guard: returns the capsule if the caller owns it, else throws. */
 async function assertOwner(capsuleId: string): Promise<string> {
@@ -238,18 +250,54 @@ export async function createLinkInviteAction(
   return { ok: true, token: invite.token };
 }
 
-/** Invite a specific email at view/edit access (owner only). */
+/** Invite a specific email at view/edit access (owner only) — emails them a join link. */
 export async function inviteEmailAction(
   capsuleId: string,
   email: string,
   role: MemberRole,
-): Promise<{ ok: boolean; error?: string }> {
-  await assertOwner(capsuleId);
+): Promise<{ ok: boolean; error?: string; warning?: string }> {
+  const ownerId = await assertOwner(capsuleId);
   const clean = email.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) return { ok: false, error: "Enter a valid email." };
-  await createEmailInvite(capsuleId, clean, role === "viewer" ? "viewer" : "editor");
+  const invite = await createEmailInvite(capsuleId, clean, role === "viewer" ? "viewer" : "editor");
+  const warning = await sendCapsuleInvite(capsuleId, ownerId, invite.token, clean, invite.role);
   revalidatePath(`/app/capsule/${capsuleId}/editor`);
-  return { ok: true };
+  return { ok: true, warning };
+}
+
+/** Resend the join-link email for an existing pending invite (owner only). */
+export async function resendInviteEmailAction(
+  capsuleId: string,
+  inviteId: string,
+): Promise<{ ok: boolean; warning?: string }> {
+  const ownerId = await assertOwner(capsuleId);
+  const invite = await getInviteById(inviteId, capsuleId);
+  if (!invite || !invite.email) return { ok: false };
+  const warning = await sendCapsuleInvite(capsuleId, ownerId, invite.token, invite.email, invite.role);
+  return { ok: true, warning };
+}
+
+/** Shared helper: email the join link for a pending invite. Returns a warning if it failed to send. */
+async function sendCapsuleInvite(
+  capsuleId: string,
+  ownerId: string,
+  token: string,
+  to: string,
+  role: MemberRole,
+): Promise<string | undefined> {
+  const [capsule, inviterEmail, origin] = await Promise.all([
+    getCapsule(capsuleId, ownerId),
+    getUserEmail(ownerId),
+    appOrigin(),
+  ]);
+  const res = await sendInviteEmail({
+    to,
+    inviterName: inviterEmail ?? "Someone",
+    capsuleTitle: capsule?.title ?? "",
+    role,
+    url: `${origin}/app/join/${token}`,
+  });
+  return res.ok ? undefined : "Invite saved, but the email couldn't be sent. Share the link from the People list instead.";
 }
 
 /** Revoke a pending invite (owner only). */
