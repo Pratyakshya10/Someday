@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PROMPTS } from "../data";
 import { saveDraftAction } from "../actions";
-import { scheduleMessageAction, unscheduleMessageAction, setRecipientAction, sendNowAction } from "../scheduled/actions";
+import { scheduleMessageAction, unscheduleMessageAction, setRecipientAction } from "../scheduled/actions";
 import type { ScheduledView, ContactView, AttachmentView, TemplateKey } from "../types";
 import { PrimaryButton, ScreenFrame } from "../components/ui";
 import { MediaStudio, LetterGallery, MediaGallery } from "../components/Attachments";
@@ -209,18 +209,6 @@ export function ScheduledCompose({
       router.refresh();
     });
 
-  // Send the letter right now, ignoring the date. Stays on the page so the
-  // panel flips to its "Sent" state.
-  const sendNow = () =>
-    startWork(async () => {
-      setError(null);
-      if (!message.contact) return setError("Choose who this letter is for first.");
-      if (!locked) await saveDraftAction(capsule.id, { title, recipient, body });
-      const res = await sendNowAction(message.id);
-      if (!res.ok) return setError(res.error ?? "Couldn't send that.");
-      router.refresh();
-    });
-
   const saveLabel = save === "saving" ? "Saving…" : save === "saved" ? "Autosaved" : "Draft";
 
   return (
@@ -338,21 +326,14 @@ export function ScheduledCompose({
                   {message.status === "sent"
                     ? "This letter has been sent — it can't be changed."
                     : message.status === "failed"
-                      ? "The last attempt didn't go through. Check the recipient's address and try again."
-                      : "Locked in. Reschedule to change the words or the time."}
+                      ? "The last attempt didn't go through. We'll try sending it again automatically."
+                      : "Locked in. It'll send itself the moment it's due — reschedule to change the words or the time."}
                 </p>
                 {error && <p className="mb-3 text-[13px] text-app-accent">{error}</p>}
-                {(message.status === "scheduled" || message.status === "failed") && (
-                  <div className="flex flex-col gap-2">
-                    <PrimaryButton onClick={sendNow} className={`w-full justify-center ${working ? "pointer-events-none opacity-70" : ""}`}>
-                      {working ? "Sending…" : message.status === "failed" ? "Retry send" : "Send now"}
-                    </PrimaryButton>
-                    {message.status === "scheduled" && (
-                      <button onClick={reschedule} disabled={working} className="w-full rounded-full border border-app-border px-5 py-2.5 text-[12px] uppercase tracking-[0.16em] text-app-dim transition-colors hover:text-app-text disabled:opacity-50">
-                        {working ? "…" : "Reschedule"}
-                      </button>
-                    )}
-                  </div>
+                {message.status === "scheduled" && (
+                  <button onClick={reschedule} disabled={working} className="w-full rounded-full border border-app-border px-5 py-2.5 text-[12px] uppercase tracking-[0.16em] text-app-dim transition-colors hover:text-app-text disabled:opacity-50">
+                    {working ? "…" : "Reschedule"}
+                  </button>
                 )}
               </>
             ) : (
