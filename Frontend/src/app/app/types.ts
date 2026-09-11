@@ -18,6 +18,35 @@ export interface AttachmentView {
   url: string;
 }
 
+// A journal entry's own media — same shape as AttachmentView, kept as a
+// separate type since it backs a separate table (JournalAttachment).
+export interface JournalAttachmentView {
+  id: string;
+  kind: AttachmentKind;
+  mimeType: string;
+  sizeBytes: number;
+  durationSec: number | null;
+  caption: string | null;
+  url: string;
+}
+
+// One day's private journal entry, as it crosses to the client.
+export interface JournalEntryView {
+  id: string;
+  entryDate: string; // "YYYY-MM-DD"
+  body: string;
+  mood: string | null;
+  attachments: JournalAttachmentView[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// A past entry resurfaced because today shares its calendar day.
+export interface OnThisDayView {
+  entry: JournalEntryView;
+  yearsAgo: number;
+}
+
 // A capsule as it crosses from the server into a Client Component. Dates are
 // serialized to ISO strings (or null) because plain objects — not Date
 // instances — are what can be passed across that boundary.
