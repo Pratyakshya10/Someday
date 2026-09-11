@@ -1,8 +1,8 @@
 // Turn a database Capsule (with real Date objects) into a plain, JSON-safe
 // CapsuleView that a Server Component can hand to a Client Component.
 
-import { signedUrl, type Capsule, type Attachment, type CapsuleMember, type Contribution, type Contact, type ScheduledWithRelations } from "@someday/backend";
-import type { CapsuleView, AttachmentView, MemberView, ContributionView, ContactView, ScheduledView } from "@/app/app/types";
+import { signedUrl, type Capsule, type Attachment, type CapsuleMember, type Contribution, type Contact, type ScheduledWithRelations, type JournalEntry, type JournalAttachment, type OnThisDayEntry } from "@someday/backend";
+import type { CapsuleView, AttachmentView, MemberView, ContributionView, ContactView, ScheduledView, JournalEntryView, JournalAttachmentView, OnThisDayView } from "@/app/app/types";
 
 /** A Contact row -> its JSON-safe client view. */
 export function toContactView(c: Contact): ContactView {
@@ -100,6 +100,38 @@ export async function toContributionViews(
     attachments: media.get(c.authorId) ?? [],
     isYou: c.authorId === meId,
   }));
+}
+
+/** Turn a JournalAttachment row into a client view, minting a signed read URL. */
+export async function toJournalAttachmentView(a: JournalAttachment): Promise<JournalAttachmentView> {
+  return {
+    id: a.id,
+    kind: a.kind,
+    mimeType: a.mimeType,
+    sizeBytes: a.sizeBytes,
+    durationSec: a.durationSec,
+    caption: a.caption,
+    url: await signedUrl(a.storagePath),
+  };
+}
+
+/** A JournalEntry (+ its already-fetched attachments) -> JSON-safe client view. */
+export async function toJournalEntryView(e: JournalEntry, attachments: JournalAttachment[]): Promise<JournalEntryView> {
+  return {
+    id: e.id,
+    entryDate: e.entryDate.toISOString().slice(0, 10),
+    body: e.body,
+    mood: e.mood,
+    attachments: await Promise.all(attachments.map(toJournalAttachmentView)),
+    createdAt: e.createdAt.toISOString(),
+    updatedAt: e.updatedAt.toISOString(),
+  };
+}
+
+/** An "on this day" match -> JSON-safe client view. Each entry's own
+ *  attachments are signed too, so the card can show a small photo preview. */
+export async function toOnThisDayView(match: OnThisDayEntry, attachments: JournalAttachment[]): Promise<OnThisDayView> {
+  return { entry: await toJournalEntryView(match.entry, attachments), yearsAgo: match.yearsAgo };
 }
 
 /** Whole-number days from now until `iso` (negative if already past). */
