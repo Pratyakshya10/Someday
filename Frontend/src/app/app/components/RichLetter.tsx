@@ -69,6 +69,9 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
   // handlers) always reads the current value.
   const [font, setFontState] = useState("default");
   const fontRef = useRef("default");
+  // Which toolbar buttons are "on" for the caret/selection right now, so
+  // bold/italic/underline read as toggles instead of one-shot actions.
+  const [active, setActive] = useState({ b: false, i: false, u: false });
   const [showEmoji, setShowEmoji] = useState(false);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
   const [emojiPos, setEmojiPos] = useState<{ left: number; bottom: number } | null>(null);
@@ -205,6 +208,22 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
     if (el.contains(range.commonAncestorContainer)) savedRange.current = range.cloneRange();
   };
 
+  // Reflect the caret/selection's current formatting on the toolbar. Only
+  // trusts the browser's state while this editor actually has focus, so a
+  // stale "on" doesn't linger after clicking elsewhere (the title, a select).
+  const updateActive = () => {
+    const el = elRef.current;
+    const sel = window.getSelection();
+    const focused =
+      el && document.activeElement === el && sel && sel.rangeCount > 0 && el.contains(sel.getRangeAt(0).commonAncestorContainer);
+    if (!focused) return setActive({ b: false, i: false, u: false });
+    setActive({
+      b: document.queryCommandState("bold"),
+      i: document.queryCommandState("italic"),
+      u: document.queryCommandState("underline"),
+    });
+  };
+
   const insertChip = (short: string, hintKind: AttachmentKind) => {
     const el = elRef.current;
     if (!el) return;
@@ -261,6 +280,7 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
     try { document.execCommand("styleWithCSS", false, "false"); } catch { /* not supported */ }
     document.execCommand(cmd);
     saveSelection();
+    updateActive();
     emit();
   };
 
@@ -441,13 +461,14 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
 
   const toolBtn =
     "flex h-8 w-8 items-center justify-center rounded-md border border-app-border bg-app-surface text-app-dim transition-colors hover:text-app-text";
+  const toolBtnActive = "border-app-accent bg-app-accent-dim text-app-text";
 
   return (
     <div className="relative">
       <div className="mb-3 flex flex-wrap items-center gap-2 border-b border-app-border pb-3">
-        <button type="button" aria-label="Bold" title="Bold" className={`${toolBtn} font-serif text-[15px] font-bold`} onMouseDown={(e) => { e.preventDefault(); exec("bold"); }}>B</button>
-        <button type="button" aria-label="Italic" title="Italic" className={`${toolBtn} font-serif text-[15px] italic`} onMouseDown={(e) => { e.preventDefault(); exec("italic"); }}>i</button>
-        <button type="button" aria-label="Underline" title="Underline" className={`${toolBtn} font-serif text-[15px] underline`} onMouseDown={(e) => { e.preventDefault(); exec("underline"); }}>U</button>
+        <button type="button" aria-label="Bold" aria-pressed={active.b} title="Bold" className={`${toolBtn} font-serif text-[15px] font-bold ${active.b ? toolBtnActive : ""}`} onMouseDown={(e) => { e.preventDefault(); exec("bold"); }}>B</button>
+        <button type="button" aria-label="Italic" aria-pressed={active.i} title="Italic" className={`${toolBtn} font-serif text-[15px] italic ${active.i ? toolBtnActive : ""}`} onMouseDown={(e) => { e.preventDefault(); exec("italic"); }}>i</button>
+        <button type="button" aria-label="Underline" aria-pressed={active.u} title="Underline" className={`${toolBtn} font-serif text-[15px] underline ${active.u ? toolBtnActive : ""}`} onMouseDown={(e) => { e.preventDefault(); exec("underline"); }}>U</button>
 
         <span className="mx-1 h-6 w-px bg-app-border" />
 
@@ -499,8 +520,10 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
         data-placeholder={placeholder}
         style={{ fontFamily: fontCss(font) }}
         onInput={emit}
-        onKeyUp={saveSelection}
-        onMouseUp={saveSelection}
+        onKeyUp={() => { saveSelection(); updateActive(); }}
+        onMouseUp={() => { saveSelection(); updateActive(); }}
+        onFocus={updateActive}
+        onBlur={updateActive}
         onPaste={onPaste}
         onDrop={onDrop}
         onDragOver={onDragOver}
