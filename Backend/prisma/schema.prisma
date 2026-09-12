@@ -127,6 +127,16 @@ model Capsule {
   unlockedAt DateTime? @map("unlocked_at")
   createdAt  DateTime  @default(now()) @map("created_at")
 
+  // When the "your capsule is ready" email went out. Set once, and used as a
+  // guard — whichever path actually triggers the unlock (a page visit, an
+  // owner action, the cron sweep) sends it, but only the first one.
+  unlockNotifiedAt DateTime? @map("unlock_notified_at")
+
+  // A solo capsule has no CapsuleMember row for its owner, so their own
+  // "have I looked since it unlocked" state lives here. Group capsules use
+  // CapsuleMember.viewedAt per member (owner included) instead.
+  ownerViewedUnlockAt DateTime? @map("owner_viewed_unlock_at")
+
   // Media sealed alongside the letter. Deleting a capsule deletes its media.
   attachments Attachment[]
 
@@ -157,6 +167,10 @@ model CapsuleMember {
   role   MemberRole
 
   createdAt DateTime @default(now()) @map("created_at")
+
+  // Last time this member actually looked at the capsule — compared against
+  // Capsule.unlockedAt to know whether it's newly unlocked for them.
+  viewedAt DateTime? @map("viewed_at")
 
   @@unique([capsuleId, userId])
   @@index([userId])
