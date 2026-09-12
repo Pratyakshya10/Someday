@@ -21,9 +21,14 @@ export {
   openByLocation,
   openByMilestone,
   deleteCapsule,
+  notifyUnlock,
+  unlockDueCapsules,
+  listUnseenUnlocked,
+  markCapsuleViewed,
   type Capsule,
   type DraftEdits,
   type LocationOpenResult,
+  type UnseenUnlockedCapsule,
 } from "./capsules";
 
 // Media: the attachment data layer + object storage.
