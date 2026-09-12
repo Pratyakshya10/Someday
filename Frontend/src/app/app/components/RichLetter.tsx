@@ -231,6 +231,16 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
     });
   };
 
+  // Belt-and-suspenders for touch: a tap's mouseup/keyup can land in a
+  // different order (or not at all) than on desktop, so also catch the
+  // browser's own selectionchange rather than relying only on those two
+  // handlers below. updateActive reads elRef.current fresh each call, so the
+  // mount-time closure never goes stale.
+  useEffect(() => {
+    document.addEventListener("selectionchange", updateActive);
+    return () => document.removeEventListener("selectionchange", updateActive);
+  }, []);
+
   const insertChip = (short: string, hintKind: AttachmentKind) => {
     const el = elRef.current;
     if (!el) return;
@@ -474,7 +484,14 @@ export const RichLetter = forwardRef<RichLetterHandle, Props>(function RichLette
 
   const toolBtn =
     "flex h-8 w-8 items-center justify-center rounded-md border border-app-border bg-app-surface text-app-dim transition-colors hover:text-app-text";
-  const toolBtnActive = "border-app-accent bg-app-accent-dim text-app-text";
+  // A solid fill, not a subtle tint — same treatment the calendar gives a
+  // selected day, so "on" reads unmistakably at a glance (including on a
+  // small, bright-sunlight phone screen). `!` (important) is required: plain
+  // bg-app-accent/border-app-accent lose to toolBtn's own bg-app-surface/
+  // border-app-border at equal specificity — Tailwind doesn't order
+  // same-layer utilities by where they appear in the className string, so a
+  // later class in the string isn't guaranteed to win.
+  const toolBtnActive = "!border-app-accent !bg-app-accent !text-app-on-accent";
 
   return (
     <div className="relative">
