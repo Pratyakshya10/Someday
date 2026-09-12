@@ -8,6 +8,8 @@
 // whole authorization model: you can only ever see or change rows you own.
 
 import { db } from "./prisma";
+import { getUserEmails } from "./admin";
+import { sendEmail } from "./email";
 import type { Capsule, CapsuleType } from "@prisma/client";
 
 export type { Capsule } from "@prisma/client";
@@ -46,6 +48,52 @@ export function listUserCapsules(userId: string): Promise<Capsule[]> {
 /** One capsule you own, or null if it doesn't exist / isn't yours. */
 export function getCapsule(id: string, ownerId: string): Promise<Capsule | null> {
   return db.capsule.findFirst({ where: { id, ownerId } });
+}
+
+export interface UnseenUnlockedCapsule {
+  id: string;
+  title: string | null;
+  type: CapsuleType;
+  unlockedAt: Date;
+}
+
+/**
+ * Capsules you can access that are unlocked and you haven't looked at since
+ * — surfaced as a "ready to open" sidebar notification. A solo capsule has
+ * no CapsuleMember row for its owner, so it checks ownerViewedUnlockAt
+ * instead of a member's viewedAt.
+ */
+export async function listUnseenUnlocked(userId: string): Promise<UnseenUnlockedCapsule[]> {
+  const rows = await db.capsule.findMany({
+    where: {
+      status: "unlocked",
+      scheduled: null,
+      OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+    },
+    include: { members: { where: { userId }, select: { viewedAt: true } } },
+    orderBy: { unlockedAt: "desc" },
+  });
+  return rows
+    .filter((c) => {
+      if (!c.unlockedAt) return false;
+      if (c.type === "group") {
+        const viewedAt = c.members[0]?.viewedAt ?? null;
+        return !viewedAt || viewedAt < c.unlockedAt;
+      }
+      return !c.ownerViewedUnlockAt || c.ownerViewedUnlockAt < c.unlockedAt;
+    })
+    .map((c) => ({ id: c.id, title: c.title, type: c.type, unlockedAt: c.unlockedAt! }));
+}
+
+/** Record that this viewer has looked at a capsule right now — clears it
+ *  from their "newly unlocked" list. Harmless to call on one that isn't
+ *  (yet) unlocked. */
+export async function markCapsuleViewed(capsuleId: string, userId: string, isGroup: boolean): Promise<void> {
+  if (isGroup) {
+    await db.capsuleMember.updateMany({ where: { capsuleId, userId }, data: { viewedAt: new Date() } });
+  } else {
+    await db.capsule.updateMany({ where: { id: capsuleId, ownerId: userId }, data: { ownerViewedUnlockAt: new Date() } });
+  }
 }
 
 /** One capsule you can access (own it, or are a member) — plus your role. */
@@ -204,6 +252,106 @@ async function markUnlocked(id: string, ownerId: string): Promise<Capsule | null
   return getCapsule(id, ownerId);
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
+  );
+}
+
+/**
+ * Email everyone with access (the owner, plus every member for a group
+ * capsule) that a capsule is ready to open. Idempotent via
+ * unlockNotifiedAt — whichever unlock path actually flips the status (a
+ * visit, an owner action, the cron sweep) calls this, but only the first
+ * caller wins the race and only one round of emails ever goes out.
+ */
+export async function notifyUnlock(capsule: Capsule, baseUrl: string): Promise<void> {
+  // A capsule backing a scheduled message is delivered by its own /r/[token]
+  // email — never notify about it here too, regardless of which caller got
+  // this far (defense in depth: the cron sweep also excludes these up front).
+  const backsScheduled = await db.scheduledMessage.findUnique({ where: { capsuleId: capsule.id }, select: { id: true } });
+  if (backsScheduled) return;
+
+  const claimed = await db.capsule.updateMany({
+    where: { id: capsule.id, unlockNotifiedAt: null },
+    data: { unlockNotifiedAt: new Date() },
+  });
+  if (claimed.count === 0) return; // already notified (or lost the race to another path)
+
+  const recipientIds = [capsule.ownerId];
+  if (capsule.type === "group") {
+    const members = await db.capsuleMember.findMany({ where: { capsuleId: capsule.id }, select: { userId: true } });
+    for (const m of members) if (!recipientIds.includes(m.userId)) recipientIds.push(m.userId);
+  }
+  const emails = await getUserEmails(recipientIds);
+  if (emails.size === 0) return;
+
+  const title = capsule.title || "Untitled capsule";
+  const url = `${baseUrl.replace(/\/$/, "")}/app/capsule/${capsule.id}`;
+  const subject = `"${title}" is ready to open`;
+  const text = `${title} has unlocked and is ready to read.\n\nOpen it here: ${url}\n\n— Someday`;
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body style="margin:0;background:#f7ecde;font-family:Georgia,'Times New Roman',serif;color:#2b2621;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
+      <tr><td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#fffaf3;border:1px solid #e7dccb;border-radius:16px;padding:40px;">
+          <tr><td style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:#a99a86;padding-bottom:20px;">Someday</td></tr>
+          <tr><td style="font-size:24px;line-height:1.3;padding-bottom:16px;">&ldquo;${escapeHtml(title)}&rdquo; is ready</td></tr>
+          <tr><td style="font-size:16px;line-height:1.6;color:#5b5348;padding-bottom:28px;">
+            It just unlocked and is ready to read.
+          </td></tr>
+          <tr><td>
+            <a href="${url}" style="display:inline-block;background:#2b2621;color:#f8f2e8;text-decoration:none;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;padding:14px 28px;border-radius:999px;">Open it</a>
+          </td></tr>
+          <tr><td style="font-size:13px;color:#a99a86;padding-top:28px;line-height:1.5;">
+            If the button doesn't work, paste this link into your browser:<br>
+            <a href="${url}" style="color:#8a7d68;">${url}</a>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+
+  await Promise.all([...emails.values()].map((to) => sendEmail({ to, subject, html, text })));
+}
+
+/**
+ * Sweep every sealed date-capsule whose day has come and open it — the cron
+ * counterpart to openIfDue, for capsules nobody has happened to visit yet.
+ * Each one that actually flips is notified the same way any other unlock
+ * path would.
+ */
+export async function unlockDueCapsules(baseUrl: string): Promise<{ opened: number }> {
+  const due = await db.capsule.findMany({
+    // scheduled: null excludes a capsule that backs a scheduled message —
+    // markSent() stamps one of those with status "sealed" + unlockDate =
+    // sendAt as pure bookkeeping (it's delivered by email via its own
+    // /r/[token] link, never through this vault-unlock path), so without
+    // this it reads as just another due capsule and gets wrongly re-opened.
+    where: { status: "sealed", unlockType: "date", unlockDate: { lte: new Date() }, scheduled: null },
+    select: { id: true },
+  });
+  let opened = 0;
+  for (const { id } of due) {
+    const claimed = await db.capsule.updateMany({
+      where: { id, status: "sealed" },
+      data: { status: "unlocked", unlockedAt: new Date() },
+    });
+    if (claimed.count === 0) continue; // a page visit beat the sweep to it
+    const fresh = await db.capsule.findUnique({ where: { id } });
+    if (!fresh) continue;
+    await notifyUnlock(fresh, baseUrl);
+    opened++;
+  }
+  return { opened };
+}
+
 /**
  * Open a DATE capsule once its delivery date has arrived. Idempotent: opening
  * an already-open capsule just returns it; not-yet-due capsules are unchanged.
@@ -223,9 +371,12 @@ export async function openCapsule(id: string, ownerId: string): Promise<Capsule 
  * (used so any group member triggers the date unlock, not just the owner).
  */
 export async function openIfDue(id: string): Promise<Capsule | null> {
-  const capsule = await db.capsule.findUnique({ where: { id } });
+  const capsule = await db.capsule.findUnique({ where: { id }, include: { scheduled: { select: { id: true } } } });
   if (!capsule) return null;
   if (capsule.status === "unlocked") return capsule;
+  // A capsule backing a scheduled message has its own /r/[token] delivery —
+  // this vault-unlock path is never the right one for it.
+  if (capsule.scheduled) return capsule;
   const due = capsule.unlockType === "date" && capsule.unlockDate != null && capsule.unlockDate.getTime() <= Date.now();
   if (capsule.status !== "sealed" || !due) return capsule;
   await db.capsule.updateMany({ where: { id, status: "sealed" }, data: { status: "unlocked", unlockedAt: new Date() } });
