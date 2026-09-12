@@ -96,6 +96,15 @@ export interface PendingInviteView {
   capsuleTitle: string | null;
 }
 
+// A capsule that unlocked since you last looked — surfaced as a sidebar
+// notification ("'<title>' is ready").
+export interface UnseenUnlockedView {
+  id: string;
+  title: string | null;
+  type: CapsuleType;
+  unlockedAt: string;
+}
+
 // One member's note in a group capsule, with their media, for the reveal.
 export interface ContributionView {
   authorId: string;
