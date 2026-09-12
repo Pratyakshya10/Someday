@@ -18,6 +18,7 @@ import {
   sealCapsule,
   openByLocation,
   openByMilestone,
+  notifyUnlock,
   deleteCapsule,
   getCapsule,
   saveContribution,
@@ -34,17 +35,9 @@ import {
 import { requireOwnerId, requireUser } from "@/lib/auth";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
+import { appOrigin } from "@/lib/origin";
 import { DEFAULT_RECIPIENT } from "./data";
 import type { CapsuleType, MemberRole, TemplateKey } from "./types";
-
-/** The app's public origin, for links inside emails (APP_URL, else the request's own host). */
-async function appOrigin(): Promise<string> {
-  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
-}
 
 /** Owner-only guard: returns the capsule if the caller owns it, else throws. */
 async function assertOwner(capsuleId: string): Promise<string> {
@@ -195,6 +188,7 @@ export async function openByLocationAction(
   const ownerId = await requireOwnerId();
   const res = await openByLocation(id, ownerId, lat, lng);
   if (res.ok) {
+    await notifyUnlock(res.capsule, await appOrigin());
     revalidatePath(`/app/capsule/${id}`);
     return { ok: true };
   }
@@ -206,7 +200,10 @@ export async function openByMilestoneAction(id: string): Promise<{ ok: boolean }
   const ownerId = await requireOwnerId();
   const opened = await openByMilestone(id, ownerId);
   const ok = opened?.status === "unlocked";
-  if (ok) revalidatePath(`/app/capsule/${id}`);
+  if (ok) {
+    await notifyUnlock(opened, await appOrigin());
+    revalidatePath(`/app/capsule/${id}`);
+  }
   return { ok };
 }
 
