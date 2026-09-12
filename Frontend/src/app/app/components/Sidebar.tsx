@@ -12,12 +12,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV } from "../data";
 import { signOutAction } from "../actions";
-import type { PendingInviteView } from "../types";
+import type { PendingInviteView, UnseenUnlockedView } from "../types";
 import { useChrome } from "./ChromeContext";
 import { Icon } from "./ui";
 import { InviteNotifications } from "./InviteNotifications";
+import { UnlockedNotifications } from "./UnlockedNotifications";
 
-export function Sidebar({ invites }: { invites: PendingInviteView[] }) {
+export function Sidebar({ invites, unlocked }: { invites: PendingInviteView[]; unlocked: UnseenUnlockedView[] }) {
   const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useChrome();
   const pathname = usePathname();
 
@@ -82,6 +83,7 @@ export function Sidebar({ invites }: { invites: PendingInviteView[] }) {
         {/* navigation */}
         <nav className={`flex flex-col gap-1 border-b border-app-border px-3.5 py-4 ${collapsed ? "md:px-3 md:py-3.5" : ""}`}>
           {invites.length > 0 && <InviteNotifications invites={invites} collapsed={collapsed} />}
+          {unlocked.length > 0 && <UnlockedNotifications unlocked={unlocked} collapsed={collapsed} />}
           {NAV.map((n) => {
             const active = pathname === n.href || pathname.startsWith(`${n.href}/`);
             return (
