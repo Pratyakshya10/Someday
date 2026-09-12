@@ -7,7 +7,7 @@
 // always showing full labels, ignoring the desktop collapse preference. At md
 // and up it's the original fixed, collapsible column.
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV } from "../data";
@@ -18,7 +18,13 @@ import { Icon } from "./ui";
 import { InviteNotifications } from "./InviteNotifications";
 import { UnlockedNotifications } from "./UnlockedNotifications";
 
-export function Sidebar({ invites, unlocked }: { invites: PendingInviteView[]; unlocked: UnseenUnlockedView[] }) {
+export function Sidebar({
+  invitesPromise,
+  unlockedPromise,
+}: {
+  invitesPromise: Promise<PendingInviteView[]>;
+  unlockedPromise: Promise<UnseenUnlockedView[]>;
+}) {
   const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useChrome();
   const pathname = usePathname();
 
@@ -82,8 +88,14 @@ export function Sidebar({ invites, unlocked }: { invites: PendingInviteView[]; u
 
         {/* navigation */}
         <nav className={`flex flex-col gap-1 border-b border-app-border px-3.5 py-4 ${collapsed ? "md:px-3 md:py-3.5" : ""}`}>
-          {invites.length > 0 && <InviteNotifications invites={invites} collapsed={collapsed} />}
-          {unlocked.length > 0 && <UnlockedNotifications unlocked={unlocked} collapsed={collapsed} />}
+          {/* Each streams in on its own once its (slow, real-DB-round-trip)
+              promise resolves — never blocks the page itself from rendering. */}
+          <Suspense fallback={null}>
+            <InviteNotifications invitesPromise={invitesPromise} collapsed={collapsed} />
+          </Suspense>
+          <Suspense fallback={null}>
+            <UnlockedNotifications unlockedPromise={unlockedPromise} collapsed={collapsed} />
+          </Suspense>
           {NAV.map((n) => {
             const active = pathname === n.href || pathname.startsWith(`${n.href}/`);
             return (

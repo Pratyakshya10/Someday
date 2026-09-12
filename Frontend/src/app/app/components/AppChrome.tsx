@@ -12,12 +12,12 @@ import { Sidebar } from "./Sidebar";
 
 function Shell({
   children,
-  invites,
-  unlocked,
+  invitesPromise,
+  unlockedPromise,
 }: {
   children: ReactNode;
-  invites: PendingInviteView[];
-  unlocked: UnseenUnlockedView[];
+  invitesPromise: Promise<PendingInviteView[]>;
+  unlockedPromise: Promise<UnseenUnlockedView[]>;
 }) {
   const pathname = usePathname();
   // Sign-in is shown before there's a session, so it stands alone — no sidebar.
@@ -25,7 +25,7 @@ function Shell({
   return (
     <div className={`app-gradient relative font-sans text-app-text ${bare ? "min-h-screen" : "h-screen overflow-hidden"}`}>
       <Grain />
-      {!bare && <Sidebar invites={invites} unlocked={unlocked} />}
+      {!bare && <Sidebar invitesPromise={invitesPromise} unlockedPromise={unlockedPromise} />}
       {children}
     </div>
   );
@@ -33,16 +33,16 @@ function Shell({
 
 export function AppChrome({
   children,
-  invites,
-  unlocked,
+  invitesPromise,
+  unlockedPromise,
 }: {
   children: ReactNode;
-  invites: PendingInviteView[];
-  unlocked: UnseenUnlockedView[];
+  invitesPromise: Promise<PendingInviteView[]>;
+  unlockedPromise: Promise<UnseenUnlockedView[]>;
 }) {
   return (
     <ChromeProvider>
-      <Shell invites={invites} unlocked={unlocked}>
+      <Shell invitesPromise={invitesPromise} unlockedPromise={unlockedPromise}>
         {children}
       </Shell>
     </ChromeProvider>

@@ -3,7 +3,7 @@
 // opens a small list of pending group-capsule invites, each linking straight
 // into the existing /app/join/[token] accept flow.
 
-import { useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import type { PendingInviteView } from "../types";
@@ -11,7 +11,16 @@ import { Icon } from "./ui";
 
 const roleLabel = (r: PendingInviteView["role"]) => (r === "viewer" ? "Can view" : "Can edit");
 
-export function InviteNotifications({ invites, collapsed }: { invites: PendingInviteView[]; collapsed: boolean }) {
+export function InviteNotifications({
+  invitesPromise,
+  collapsed,
+}: {
+  invitesPromise: Promise<PendingInviteView[]>;
+  collapsed: boolean;
+}) {
+  // Suspends this component alone (inside its own <Suspense> in Sidebar)
+  // while the promise settles — the rest of the page never waits on it.
+  const invites = use(invitesPromise);
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const [coords, setCoords] = useState<{ left: number; top: number; width: number } | null>(null);
@@ -44,6 +53,8 @@ export function InviteNotifications({ invites, collapsed }: { invites: PendingIn
       window.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  if (invites.length === 0) return null;
 
   return (
     <>

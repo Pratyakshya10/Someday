@@ -3,13 +3,22 @@
 // that opens a small list of capsules that unlocked since you last looked,
 // each linking straight into the capsule's own reveal page.
 
-import { useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import type { UnseenUnlockedView } from "../types";
 import { Icon } from "./ui";
 
-export function UnlockedNotifications({ unlocked, collapsed }: { unlocked: UnseenUnlockedView[]; collapsed: boolean }) {
+export function UnlockedNotifications({
+  unlockedPromise,
+  collapsed,
+}: {
+  unlockedPromise: Promise<UnseenUnlockedView[]>;
+  collapsed: boolean;
+}) {
+  // Suspends this component alone (inside its own <Suspense> in Sidebar)
+  // while the promise settles — the rest of the page never waits on it.
+  const unlocked = use(unlockedPromise);
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const [coords, setCoords] = useState<{ left: number; top: number; width: number } | null>(null);
@@ -42,6 +51,8 @@ export function UnlockedNotifications({ unlocked, collapsed }: { unlocked: Unsee
       window.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  if (unlocked.length === 0) return null;
 
   return (
     <>

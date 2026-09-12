@@ -17,24 +17,24 @@ export const dynamic = "force-dynamic";
 // Every /app/* page renders inside the themed shell (background + sidebar).
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
-  const invites: PendingInviteView[] = user?.email
-    ? (await listPendingInvitesForEmail(user.email)).map((i) => ({
-        id: i.id,
-        token: i.token,
-        role: i.role,
-        capsuleTitle: i.capsuleTitle,
-      }))
-    : [];
-  const unlocked: UnseenUnlockedView[] = user
-    ? (await listUnseenUnlocked(user.id)).map((c) => ({
-        id: c.id,
-        title: c.title,
-        type: c.type,
-        unlockedAt: c.unlockedAt.toISOString(),
-      }))
-    : [];
+  // Deliberately NOT awaited here — these two queries have real latency
+  // (each a full DB round trip) and gate nothing about the page itself, so
+  // blocking every single navigation on them would make the whole app feel
+  // slow for a sidebar badge. Handed down as promises; the notification
+  // components unwrap them with use() inside their own <Suspense>, so the
+  // page streams in immediately and the bells pop in a beat later.
+  const invitesPromise: Promise<PendingInviteView[]> = user?.email
+    ? listPendingInvitesForEmail(user.email).then((rows) =>
+        rows.map((i) => ({ id: i.id, token: i.token, role: i.role, capsuleTitle: i.capsuleTitle })),
+      )
+    : Promise.resolve([]);
+  const unlockedPromise: Promise<UnseenUnlockedView[]> = user
+    ? listUnseenUnlocked(user.id).then((rows) =>
+        rows.map((c) => ({ id: c.id, title: c.title, type: c.type, unlockedAt: c.unlockedAt.toISOString() })),
+      )
+    : Promise.resolve([]);
   return (
-    <AppChrome invites={invites} unlocked={unlocked}>
+    <AppChrome invitesPromise={invitesPromise} unlockedPromise={unlockedPromise}>
       {children}
     </AppChrome>
   );
