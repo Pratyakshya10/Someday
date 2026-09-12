@@ -1,10 +1,13 @@
-// Cron endpoint — delivers every scheduled message whose time has come.
+// Cron endpoint — delivers every scheduled message whose time has come, and
+// opens (+ emails everyone about) every sealed date-capsule whose day has
+// come. Two unrelated sweeps sharing one route so this stays the only cron
+// job in vercel.json — Vercel's Hobby plan caps how many/how often you get.
 //
 // A scheduler (Vercel Cron, GitHub Actions, cron-job.org, …) hits this on an
 // interval. It's protected by a shared secret so only the scheduler can trigger
-// sends. The reveal links are built from this request's own origin.
+// sends. The reveal/capsule links are built from this request's own origin.
 
-import { deliverDue } from "@someday/backend";
+import { deliverDue, unlockDueCapsules } from "@someday/backend";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -24,8 +27,8 @@ async function run(req: Request): Promise<Response> {
 
   // Prefer the public app URL if set; otherwise use the request's own origin.
   const baseUrl = process.env.APP_URL ?? new URL(req.url).origin;
-  const summary = await deliverDue(baseUrl);
-  return Response.json({ ok: true, ...summary });
+  const [messages, capsules] = await Promise.all([deliverDue(baseUrl), unlockDueCapsules(baseUrl)]);
+  return Response.json({ ok: true, messages, capsules });
 }
 
 export const GET = run;
