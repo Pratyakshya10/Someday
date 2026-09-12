@@ -1,14 +1,18 @@
 import { notFound, redirect } from "next/navigation";
+import { after } from "next/server";
 import {
   getAccessibleCapsule,
   getMemberRole,
   openIfDue,
+  notifyUnlock,
+  markCapsuleViewed,
   listAttachments,
   listCapsuleAttachments,
   listContributions,
   getUserEmails,
 } from "@someday/backend";
 import { requireUser } from "@/lib/auth";
+import { appOrigin } from "@/lib/origin";
 import { toCapsuleView, toAttachmentViews, toContributionViews } from "@/lib/serialize";
 import type { AttachmentView, ContributionView } from "../../types";
 import { CapsuleDetail, type DetailMode } from "../../screens/CapsuleDetail";
@@ -36,7 +40,13 @@ export default async function CapsulePage({ params }: PageProps<"/app/capsule/[i
   // A sealed DATE capsule opens itself once due (any member can trigger it).
   if (capsule.status === "sealed" && capsule.unlockType === "date") {
     const opened = await openIfDue(id);
-    if (opened) capsule = opened;
+    if (opened) {
+      capsule = opened;
+      if (opened.status === "unlocked") {
+        const baseUrl = await appOrigin();
+        after(() => notifyUnlock(opened, baseUrl));
+      }
+    }
   }
 
   let mode: DetailMode;
@@ -48,6 +58,7 @@ export default async function CapsulePage({ params }: PageProps<"/app/capsule/[i
   let attachments: AttachmentView[] = [];
   let contributions: ContributionView[] = [];
   if (mode === "reveal") {
+    after(() => markCapsuleViewed(id, user.id, capsule.type === "group"));
     if (capsule.type === "group") {
       const contribs = await listContributions(id);
       const allAttachments = await listCapsuleAttachments(id);
