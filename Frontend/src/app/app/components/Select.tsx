@@ -41,15 +41,19 @@ export function Select({
     const el = btnRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
+    // A compact trigger (e.g. the hour/minute pickers) is too narrow to hold
+    // its own menu legibly — a 60-item minute list at ~50px wide reads as a
+    // garbled sliver. Floor the width so any menu stays readable.
+    const width = Math.max(r.width, 96);
     const menuH = Math.min(280, options.length * 40 + 12);
     const spaceBelow = window.innerHeight - r.bottom;
     const openUp = spaceBelow < menuH + 12 && r.top > spaceBelow;
     // Clamp so the menu never runs off the right edge on a narrow screen,
     // even if the trigger itself sits close to it.
-    const left = Math.max(8, Math.min(r.left, window.innerWidth - r.width - 8));
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
     setCoords({
       left,
-      width: r.width,
+      width,
       top: openUp ? Math.max(8, r.top - menuH - 6) : r.bottom + 6,
     });
   };
@@ -103,11 +107,14 @@ export function Select({
       {open && coords &&
         createPortal(
           <>
-            <div className="fixed inset-0 z-[60]" onMouseDown={() => setOpen(false)} />
+            {/* z-65/66, above DateTimeField's own z-61 popover — a Select can
+                open nested inside one (the hour/minute/AM-PM pickers) and
+                needs to sit above it, not tie with it. */}
+            <div className="fixed inset-0 z-[65]" onMouseDown={() => setOpen(false)} />
             <div
               ref={menuRef}
               style={{ position: "fixed", left: coords.left, top: coords.top, width: coords.width, maxHeight: 280 }}
-              className="z-[61] overflow-y-auto rounded-xl border border-app-border bg-app-panel p-1.5 shadow-[0_20px_50px_rgba(43,38,33,0.18)] backdrop-blur-xl"
+              className="z-[66] overflow-y-auto rounded-xl border border-app-border bg-app-panel p-1.5 shadow-[0_20px_50px_rgba(43,38,33,0.18)] backdrop-blur-xl"
             >
               {options.map((o) => (
                 <button
