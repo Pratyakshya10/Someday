@@ -314,6 +314,7 @@ model ScheduledMessage {
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") // last touched — used to cool down retries of a failed send
 
   @@index([ownerId])
+  @@index([contactId]) // covers the FK — a contact's own history, and its ON DELETE CASCADE
   @@index([status, sendAt]) // the delivery worker scans due, scheduled rows
   @@map("scheduled_messages")
 }
